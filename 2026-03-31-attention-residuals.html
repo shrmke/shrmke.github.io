@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attention Residuals — 论文笔记</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --bg2: #161719;
+    --bg3: #1e2024;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e6df;
+    --text2: #9a9890;
+    --text3: #5a5856;
+    --accent: #7eb8f7;
+    --accent2: #4a8fd4;
+    --teal: #5dcaa5;
+    --amber: #ef9f27;
+    --coral: #e8593c;
+    --purple: #9b8de8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(126,184,247,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 32px; }
+  .meta-row {
+    display: flex; gap: 16px; align-items: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--text3);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .meta-row span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); }
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .tagline {
+    font-size: 16px; color: var(--text2);
+    max-width: 640px;
+    border-left: 2px solid var(--accent2);
+    padding-left: 14px;
+    font-style: italic;
+  }
+
+  /* Nav */
+  nav {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+    overflow-x: auto;
+  }
+  nav a {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--text3);
+    text-decoration: none;
+    padding: 14px 20px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border2); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Sections */
+  .section {
+    padding: 52px 0;
+    border-bottom: 1px solid var(--border);
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px; font-weight: 400;
+    margin-bottom: 28px;
+    color: var(--text);
+  }
+  h3 {
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text3); margin: 32px 0 12px;
+    font-family: 'DM Mono', monospace;
+  }
+  p { color: var(--text2); margin-bottom: 14px; font-size: 15px; }
+  strong { color: var(--text); font-weight: 500; }
+
+  /* Diagram card */
+  .diagram-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 24px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .diagram-card svg { display: block; width: 100%; }
+
+  /* Info box */
+  .info-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px; color: var(--text2);
+  }
+
+  /* Table */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin: 24px 0;
+  }
+  th {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text3); text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border2);
+  }
+  td { padding: 12px 16px; color: var(--text2); border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text); font-weight: 400; }
+  .highlight-row td { background: rgba(126,184,247,0.05); color: var(--text); }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; padding: 3px 10px;
+    border-radius: 4px; margin: 2px;
+  }
+  .tag-blue { background: rgba(126,184,247,0.1); color: var(--accent); border: 1px solid rgba(126,184,247,0.2); }
+  .tag-teal { background: rgba(93,202,165,0.1); color: var(--teal); border: 1px solid rgba(93,202,165,0.2); }
+  .tag-amber { background: rgba(239,159,39,0.1); color: var(--amber); border: 1px solid rgba(239,159,39,0.2); }
+  .tag-coral { background: rgba(232,89,60,0.1); color: var(--coral); border: 1px solid rgba(232,89,60,0.2); }
+
+  /* Thought block */
+  .thought {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    font-size: 14px; color: var(--text2);
+  }
+  .thought-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  /* SVG theme overrides for dark bg */
+  svg text { fill: #9a9890; font-family: 'Noto Sans SC', sans-serif; }
+  svg text.th { fill: #e8e6df; font-weight: 500; font-size: 13px; }
+  svg text.ts { fill: #9a9890; font-size: 12px; }
+  svg .box { fill: #1e2024; stroke: rgba(255,255,255,0.12); }
+  svg .arr { stroke: rgba(255,255,255,0.3); fill: none; stroke-width: 1.5; marker-end: url(#arrow); }
+  svg .c-teal rect, svg .c-teal circle { fill: rgba(93,202,165,0.15); stroke: rgba(93,202,165,0.4); }
+  svg .c-teal text { fill: #5dcaa5; }
+  svg .c-purple rect, svg .c-purple circle { fill: rgba(155,141,232,0.15); stroke: rgba(155,141,232,0.4); }
+  svg .c-purple text { fill: #b8aff0; }
+  svg .c-amber rect, svg .c-amber circle { fill: rgba(239,159,39,0.15); stroke: rgba(239,159,39,0.4); }
+  svg .c-amber text { fill: #efb84a; }
+  svg .c-coral rect, svg .c-coral circle { fill: rgba(232,89,60,0.15); stroke: rgba(232,89,60,0.4); }
+  svg .c-coral text { fill: #e8795c; }
+  svg .c-gray rect, svg .c-gray circle { fill: rgba(120,118,112,0.15); stroke: rgba(120,118,112,0.35); }
+  svg .c-gray text { fill: #9a9890; }
+  svg line.arr { stroke: rgba(255,255,255,0.25); }
+
+  /* Footer */
+  footer {
+    padding: 32px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text3);
+    text-align: center;
+  }
+  footer a { color: var(--text3); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="meta-row">
+      <span>2026-03-31</span>
+      <span class="dot"></span>
+      <span>Kimi Team · Moonshot AI</span>
+      <span class="dot"></span>
+      <span><a href="https://arxiv.org/abs/2603.15031" style="color:var(--accent);text-decoration:none;">arXiv:2603.15031</a></span>
+    </div>
+    <h1>Attention Residuals</h1>
+    <p class="tagline">用 softmax 注意力替代固定权重残差，让每一层动态选择参考哪些历史层的信息</p>
+  </div>
+</header>
+
+<nav>
+  <div class="container" style="display:flex;padding:0 32px;">
+    <a href="#" class="active" onclick="show('overview',this)">问题与动机</a>
+    <a href="#" onclick="show('method',this)">核心方法</a>
+    <a href="#" onclick="show('block',this)">Block AttnRes</a>
+    <a href="#" onclick="show('results',this)">实验结论</a>
+    <a href="#" onclick="show('thoughts',this)">个人思考</a>
+  </div>
+</nav>
+
+<!-- OVERVIEW -->
+<div id="overview" class="section active">
+<div class="container">
+  <h2>问题：传统残差连接的三个缺陷</h2>
+  <p>标准残差连接以<strong>固定权重 1</strong> 累加所有前层输出。展开递推式后，每层接收到的是所有先前层的等权之和，没有任何选择机制。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text class="th" x="340" y="24" text-anchor="middle" fill="#e8e6df">传统残差：每层权重固定为 1×，无法选择性聚合</text>
+      <g class="c-teal"><rect x="270" y="38" width="140" height="34" rx="6" stroke-width="0.5"/><text class="th" x="340" y="60" text-anchor="middle" dominant-baseline="central" fill="#5dcaa5">Token 嵌入 h₁</text></g>
+      <line x1="340" y1="72" x2="340" y2="92" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <g class="c-purple"><rect x="250" y="92" width="180" height="34" rx="6" stroke-width="0.5"/><text class="th" x="340" y="109" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">第 1 层输出</text></g>
+      <text class="ts" x="192" y="112" text-anchor="middle" fill="#5a5856">+1×</text>
+      <line x1="340" y1="126" x2="340" y2="146" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <g class="c-purple"><rect x="250" y="146" width="180" height="34" rx="6" stroke-width="0.5"/><text class="th" x="340" y="163" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">第 2 层输出</text></g>
+      <text class="ts" x="192" y="165" text-anchor="middle" fill="#5a5856">+1×</text>
+      <line x1="340" y1="180" x2="340" y2="200" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <g class="c-purple"><rect x="250" y="200" width="180" height="34" rx="6" stroke-width="0.5"/><text class="th" x="340" y="217" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">第 L 层输出</text></g>
+      <text class="ts" x="192" y="219" text-anchor="middle" fill="#5a5856">+1×</text>
+      <!-- Problem boxes -->
+      <rect x="460" y="80" width="200" height="175" rx="8" fill="rgba(232,89,60,0.06)" stroke="rgba(232,89,60,0.2)" stroke-width="0.5" stroke-dasharray="4 3"/>
+      <text class="th" x="560" y="102" text-anchor="middle" fill="#e8795c">三个问题</text>
+      <text class="ts" x="560" y="126" text-anchor="middle" fill="#9a9890">1. 无选择性：所有层等权</text>
+      <text class="ts" x="560" y="148" text-anchor="middle" fill="#9a9890">2. 信息不可逆：无法恢复</text>
+      <text class="ts" x="560" y="170" text-anchor="middle" fill="#9a9890">3. 隐状态随层数 O(L) 增长</text>
+      <text class="ts" x="560" y="192" text-anchor="middle" fill="#9a9890">早期层贡献被稀释</text>
+      <line x1="430" y1="163" x2="458" y2="163" stroke="rgba(232,89,60,0.4)" stroke-width="0.8" fill="none" marker-end="url(#arrow)"/>
+      <text class="ts" x="340" y="268" text-anchor="middle" fill="#5a5856">h_l = h_{l-1} + f_{l-1}(h_{l-1})　　每层权重固定为 1</text>
+    </svg>
+  </div>
+
+  <p>这个问题与 RNN 在序列维度上的瓶颈非常相似——RNN 把所有历史压缩成一个状态，导致长程依赖丢失。Transformer 用注意力机制解决了序列维度的问题，本文把同样的思路搬到<strong>深度维度</strong>上。</p>
+
+  <div class="info-box">
+    <strong>核心类比：</strong>就像 Transformer 在序列维度用注意力代替 RNN 的递推，AttnRes 在深度维度用注意力代替固定权重的残差累加。
+  </div>
+
+  <div style="margin-top:20px;">
+    <span class="tag tag-blue">Transformer</span>
+    <span class="tag tag-blue">LLM</span>
+    <span class="tag tag-teal">残差连接</span>
+    <span class="tag tag-amber">深度学习优化</span>
+    <span class="tag tag-coral">Kimi Linear</span>
+  </div>
+</div>
+</div>
+
+<!-- METHOD -->
+<div id="method" class="section">
+<div class="container">
+  <h2>核心方法：Full Attention Residuals</h2>
+  <p>将固定权重的残差累加，替换为对所有前层输出做 <strong>softmax attention</strong>：</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 370" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text class="th" x="340" y="24" text-anchor="middle" fill="#e8e6df">AttnRes：动态权重——线条粗细即注意力权重大小</text>
+      <!-- V vectors -->
+      <g class="c-teal"><rect x="30" y="46" width="120" height="30" rx="5" stroke-width="0.5"/><text class="th" x="90" y="61" text-anchor="middle" dominant-baseline="central" fill="#5dcaa5">嵌入 v₀</text></g>
+      <g class="c-purple"><rect x="30" y="90" width="120" height="30" rx="5" stroke-width="0.5"/><text class="th" x="90" y="105" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层1输出 v₁</text></g>
+      <g class="c-purple"><rect x="30" y="134" width="120" height="30" rx="5" stroke-width="0.5"/><text class="th" x="90" y="149" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层2输出 v₂</text></g>
+      <g class="c-purple"><rect x="30" y="178" width="120" height="30" rx="5" stroke-width="0.5"/><text class="th" x="90" y="193" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层3输出 v₃</text></g>
+      <text class="ts" x="90" y="230" text-anchor="middle" fill="#5a5856">（所有先前层）</text>
+      <!-- Query -->
+      <g class="c-amber"><rect x="380" y="120" width="160" height="36" rx="6" stroke-width="0.5"/><text class="th" x="460" y="138" text-anchor="middle" dominant-baseline="central" fill="#efb84a">查询向量 wₗ（可学习）</text></g>
+      <text class="ts" x="460" y="174" text-anchor="middle" fill="#5a5856">每层一个 d 维向量</text>
+      <!-- Attention lines -->
+      <line x1="380" y1="136" x2="152" y2="61" stroke="#BA7517" stroke-width="0.8" stroke-opacity="0.4" fill="none" marker-end="url(#arrow2)"/>
+      <text class="ts" x="282" y="80" text-anchor="middle" fill="#5a5856">α₀=0.05</text>
+      <line x1="380" y1="138" x2="152" y2="105" stroke="#BA7517" stroke-width="1.8" stroke-opacity="0.55" fill="none" marker-end="url(#arrow2)"/>
+      <text class="ts" x="282" y="116" text-anchor="middle" fill="#5a5856">α₁=0.15</text>
+      <line x1="380" y1="140" x2="152" y2="149" stroke="#BA7517" stroke-width="5" stroke-opacity="0.9" fill="none" marker-end="url(#arrow2)"/>
+      <text class="ts" x="282" y="138" text-anchor="middle" fill="#efb84a">α₂=0.65</text>
+      <line x1="380" y1="142" x2="152" y2="193" stroke="#BA7517" stroke-width="1.8" stroke-opacity="0.5" fill="none" marker-end="url(#arrow2)"/>
+      <text class="ts" x="282" y="186" text-anchor="middle" fill="#5a5856">α₃=0.15</text>
+      <!-- Result -->
+      <g class="c-coral"><rect x="350" y="280" width="250" height="38" rx="8" stroke-width="0.5"/><text class="th" x="475" y="299" text-anchor="middle" dominant-baseline="central" fill="#e8795c">hₗ = Σ αᵢ · vᵢ（加权聚合）</text></g>
+      <line x1="460" y1="158" x2="460" y2="278" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" fill="none" marker-end="url(#arrow2)"/>
+      <!-- Formula box -->
+      <rect x="30" y="270" width="290" height="72" rx="8" fill="rgba(126,184,247,0.05)" stroke="rgba(126,184,247,0.15)" stroke-width="0.5"/>
+      <text class="th" x="175" y="292" text-anchor="middle" fill="#7eb8f7">核心公式</text>
+      <text class="ts" x="175" y="314" text-anchor="middle" fill="#9a9890">αᵢ→ₗ = softmax( wₗᵀ · RMSNorm(vᵢ) )</text>
+      <text class="ts" x="175" y="332" text-anchor="middle" fill="#5a5856">权重由输入内容动态决定</text>
+    </svg>
+  </div>
+
+  <h3>与传统方法的本质区别</h3>
+  <table>
+    <thead>
+      <tr><th>对比项</th><th>标准残差</th><th>Full AttnRes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>聚合对象</td><td>仅上一层 h_{l-1}</td><td>全部 L 个层输出</td></tr>
+      <tr><td>聚合权重</td><td>固定（均为 1）</td><td>动态 softmax，随输入变化</td></tr>
+      <tr><td>内存开销</td><td>O(d)</td><td>O(L·d)</td></tr>
+      <tr><td>大规模训练</td><td>✓ 无额外开销</td><td>✗ 需保存所有层输出</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    论文还证明了：标准残差连接本质上是<strong>深度线性注意力</strong>，AttnRes 是将其推广为<strong>深度 softmax 注意力</strong>——完成了与序列维度相同的"线性→softmax"升级。
+  </div>
+</div>
+</div>
+
+<!-- BLOCK -->
+<div id="block" class="section">
+<div class="container">
+  <h2>Block AttnRes：面向大规模训练的工程方案</h2>
+  <p>Full AttnRes 在流水线并行训练中代价过高——每层需要访问所有前层的输出，而早期层的输出物理上存在于其他 GPU 上，跨卡传输开销为 O(L·d)。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text class="th" x="340" y="24" text-anchor="middle" fill="#e8e6df">Block AttnRes：块内求和，跨块注意力（L=9，N=3）</text>
+      <!-- Block 1 -->
+      <rect x="30" y="44" width="170" height="108" rx="8" fill="none" stroke="rgba(93,202,165,0.3)" stroke-width="0.8" stroke-dasharray="4 3"/>
+      <text class="ts" x="115" y="60" text-anchor="middle" fill="#5a5856">块 1（层 1-3）</text>
+      <g class="c-purple"><rect x="42" y="66" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="115" y="77" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层1输出</text></g>
+      <g class="c-purple"><rect x="42" y="94" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="115" y="105" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层2输出</text></g>
+      <g class="c-purple"><rect x="42" y="122" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="115" y="133" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层3输出</text></g>
+      <line x1="115" y1="152" x2="115" y2="172" stroke="rgba(255,255,255,0.2)" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+      <text class="ts" x="128" y="165" text-anchor="start" fill="#5a5856">求和</text>
+      <g class="c-teal"><rect x="52" y="172" width="126" height="26" rx="5" stroke-width="0.5"/><text class="th" x="115" y="185" text-anchor="middle" dominant-baseline="central" fill="#5dcaa5">块表示 b₁</text></g>
+
+      <!-- Block 2 -->
+      <rect x="255" y="44" width="170" height="108" rx="8" fill="none" stroke="rgba(93,202,165,0.3)" stroke-width="0.8" stroke-dasharray="4 3"/>
+      <text class="ts" x="340" y="60" text-anchor="middle" fill="#5a5856">块 2（层 4-6）</text>
+      <g class="c-purple"><rect x="267" y="66" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="340" y="77" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层4输出</text></g>
+      <g class="c-purple"><rect x="267" y="94" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="340" y="105" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层5输出</text></g>
+      <g class="c-purple"><rect x="267" y="122" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="340" y="133" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层6输出</text></g>
+      <line x1="340" y1="152" x2="340" y2="172" stroke="rgba(255,255,255,0.2)" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+      <text class="ts" x="353" y="165" text-anchor="start" fill="#5a5856">求和</text>
+      <g class="c-teal"><rect x="277" y="172" width="126" height="26" rx="5" stroke-width="0.5"/><text class="th" x="340" y="185" text-anchor="middle" dominant-baseline="central" fill="#5dcaa5">块表示 b₂</text></g>
+
+      <!-- Block 3 (current) -->
+      <rect x="480" y="44" width="170" height="108" rx="8" fill="none" stroke="rgba(239,159,39,0.3)" stroke-width="0.8" stroke-dasharray="4 3"/>
+      <text class="ts" x="565" y="60" text-anchor="middle" fill="#5a5856">块 3（当前）</text>
+      <g class="c-purple"><rect x="492" y="66" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="565" y="77" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层7输出</text></g>
+      <g class="c-purple"><rect x="492" y="94" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="565" y="105" text-anchor="middle" dominant-baseline="central" fill="#b8aff0">层8输出</text></g>
+      <g class="c-amber"><rect x="492" y="122" width="146" height="22" rx="4" stroke-width="0.5"/><text class="ts" x="565" y="133" text-anchor="middle" dominant-baseline="central" fill="#efb84a">层9 ← 正在计算</text></g>
+      <line x1="565" y1="152" x2="565" y2="172" stroke="rgba(255,255,255,0.2)" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+      <g class="c-amber"><rect x="502" y="172" width="126" height="26" rx="5" stroke-width="0.5"/><text class="th" x="565" y="185" text-anchor="middle" dominant-baseline="central" fill="#efb84a">部分和 b₃_partial</text></g>
+
+      <!-- Cross-block attention -->
+      <line x1="115" y1="198" x2="115" y2="238" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+      <line x1="340" y1="198" x2="340" y2="238" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+      <line x1="565" y1="198" x2="565" y2="238" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+      <g class="c-coral"><rect x="80" y="238" width="520" height="34" rx="8" stroke-width="0.5"/><text class="th" x="340" y="255" text-anchor="middle" dominant-baseline="central" fill="#e8795c">跨块 softmax attention：仅对 N 个块表示计算权重</text></g>
+
+      <!-- Memory note -->
+      <rect x="80" y="294" width="520" height="48" rx="6" fill="rgba(126,184,247,0.05)" stroke="rgba(126,184,247,0.12)" stroke-width="0.5"/>
+      <text class="ts" x="340" y="314" text-anchor="middle" fill="#7eb8f7">内存：O(L·d) → O(N·d)　　N≈8 即可恢复大部分收益</text>
+      <text class="ts" x="340" y="332" text-anchor="middle" fill="#5a5856">块边界固定，块内为实时累加的部分和</text>
+    </svg>
+  </div>
+
+  <h3>完整对比</h3>
+  <table>
+    <thead><tr><th>方案</th><th>聚合粒度</th><th>内存</th><th>大规模可用</th><th>性能</th></tr></thead>
+    <tbody>
+      <tr><td>标准残差</td><td>仅上一层</td><td>O(d)</td><td>✓</td><td>基线</td></tr>
+      <tr><td>Full AttnRes</td><td>全部 L 层</td><td>O(L·d)</td><td>✗</td><td>最优</td></tr>
+      <tr class="highlight-row"><td>Block AttnRes</td><td>N 个块表示</td><td>O(N·d)</td><td>✓</td><td>接近 Full</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="section">
+<div class="container">
+  <h2>实验结论</h2>
+
+  <h3>Scaling Law</h3>
+  <p>在多个模型规模上均有稳定提升。Block AttnRes 等效于基线用 <strong>1.25×</strong> 计算量训练的效果。</p>
+
+  <h3>48B 模型验证</h3>
+  <p>集成到 Kimi Linear 架构（48B 参数 / 3B 激活参数），在 1.4T tokens 上预训练：</p>
+  <table>
+    <thead><tr><th>指标</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>下游任务</td><td>全面优于基线</td></tr>
+      <tr><td>隐状态数量级</td><td>随深度增长受控（PreNorm 稀释问题缓解）</td></tr>
+      <tr><td>梯度分布</td><td>各层更均匀</td></tr>
+      <tr class="highlight-row"><td>推理延迟增加</td><td>&lt; 2%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <strong>关键数字：</strong>推理延迟增加不超过 2%，训练开销"marginal"——论文将 Block AttnRes 定位为标准残差连接的即插即用替换。
+  </div>
+</div>
+</div>
+
+<!-- THOUGHTS -->
+<div id="thoughts" class="section">
+<div class="container">
+  <h2>个人思考</h2>
+
+  <div class="thought">
+    <div class="thought-label">关于 Block AttnRes 的本质</div>
+    块内求和可类比为深度维度上的"池化"——用局部信息损失换全局计算效率。模型知道"这几层整体贡献了多少"，但不知道"哪一层更重要"。实验证明 N=8 时性能已接近 Full AttnRes，说明块内细粒度区分在实践中没那么关键。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">与 ResNet 残差的区别</div>
+    两者公式相同（h = x + F(x)），但动机不同：ResNet 的核心是"学残差比学目标更容易"；Transformer 引入残差更多是工程考量——防止梯度消失。此外 Norm 位置不同（PostNorm vs PreNorm），加法后的激活函数也不同。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">核心精神</div>
+    不浪费已经计算出来的信息。AttnRes 拒绝丢弃早期层隐状态，让深层可以选择性回溯——这与同期工作"One Model Is Enough"（不把隐状态解码成文字再重编码）有共同的精神。
+  </div>
+
+  <h3>相关论文</h3>
+  <p>
+    <span class="tag tag-blue">ResNet (He et al., 2016)</span>
+    <span class="tag tag-teal">PreNorm</span>
+    <span class="tag tag-amber">Kimi Linear Architecture</span>
+    <span class="tag tag-coral">Highway Networks</span>
+  </p>
+</div>
+</div>
+
+<footer>
+  <div class="container">
+    <a href="https://arxiv.org/abs/2603.15031">arXiv:2603.15031</a> · Kimi Team · 笔记生成于 2026-03-31
+  </div>
+</footer>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  return false;
+}
+</script>
+</body>
+</html>

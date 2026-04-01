@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic Shift — 论文笔记</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0d; --bg2: #181714; --bg3: #201e1b;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+    --text: #e8e4dc; --text2: #98938a; --text3: #565250;
+    --accent: #ef9f27; --accent2: #c47d10;
+    --teal: #5dcaa5; --amber: #ef9f27; --coral: #e8593c; --purple: #9b8de8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; font-weight: 300; line-height: 1.8; }
+  header { border-bottom: 1px solid var(--border); padding: 48px 0 36px; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 500px; height: 280px; background: radial-gradient(ellipse, rgba(239,159,39,0.07) 0%, transparent 70%); pointer-events: none; }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 32px; }
+  .meta-row { display: flex; gap: 16px; align-items: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); margin-bottom: 20px; flex-wrap: wrap; }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); }
+  h1 { font-family: 'Instrument Serif', serif; font-size: clamp(26px, 4vw, 40px); font-weight: 400; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 16px; }
+  .tagline { font-size: 16px; color: var(--text2); max-width: 640px; border-left: 2px solid var(--accent2); padding-left: 14px; font-style: italic; }
+  nav { display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  nav a { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); text-decoration: none; padding: 14px 20px; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.2s, border-color 0.2s; }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border2); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .section { padding: 52px 0; border-bottom: 1px solid var(--border); display: none; animation: fadeIn 0.25s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  h2 { font-family: 'Instrument Serif', serif; font-size: 26px; font-weight: 400; margin-bottom: 28px; }
+  h3 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin: 32px 0 12px; font-family: 'DM Mono', monospace; }
+  p { color: var(--text2); margin-bottom: 14px; font-size: 15px; }
+  strong { color: var(--text); font-weight: 500; }
+  .diagram-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 32px 24px; margin: 28px 0; overflow-x: auto; }
+  .diagram-card svg { display: block; width: 100%; }
+  .info-box { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: var(--text2); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 24px 0; }
+  th { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--border2); }
+  td { padding: 12px 16px; color: var(--text2); border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text); }
+  .highlight-row td { background: rgba(239,159,39,0.05); color: var(--text); }
+  .tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 11px; padding: 3px 10px; border-radius: 4px; margin: 2px; }
+  .tag-teal { background: rgba(93,202,165,0.1); color: var(--teal); border: 1px solid rgba(93,202,165,0.2); }
+  .tag-blue { background: rgba(126,184,247,0.1); color: #7eb8f7; border: 1px solid rgba(126,184,247,0.2); }
+  .tag-amber { background: rgba(239,159,39,0.1); color: var(--amber); border: 1px solid rgba(239,159,39,0.2); }
+  .tag-coral { background: rgba(232,89,60,0.1); color: var(--coral); border: 1px solid rgba(232,89,60,0.2); }
+  .thought { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin: 16px 0; font-size: 14px; color: var(--text2); }
+  .thought-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  footer { padding: 32px 0; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); text-align: center; }
+  footer a { color: var(--text3); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="meta-row">
+      <span>2026-03-31</span>
+      <span class="dot"></span>
+      <span>Hang Gao · Rutgers University</span>
+      <span class="dot"></span>
+      <span><a href="https://arxiv.org/abs/2603.21437" style="color:var(--accent);text-decoration:none;">arXiv:2603.21437</a></span>
+    </div>
+    <h1>Semantic Shift</h1>
+    <p class="tagline">Embedding 检索退化的真正原因不是文本长度，而是文本内部的语义跳跃程度</p>
+  </div>
+</header>
+
+<nav>
+  <div class="container" style="display:flex;padding:0 32px;">
+    <a href="#" class="active" onclick="show('overview',this)">问题与动机</a>
+    <a href="#" onclick="show('theory',this)">理论基础</a>
+    <a href="#" onclick="show('experiment',this)">关键实验</a>
+    <a href="#" onclick="show('application',this)">实际应用</a>
+    <a href="#" onclick="show('thoughts',this)">个人思考</a>
+  </div>
+</nav>
+
+<!-- OVERVIEW -->
+<div id="overview" class="section active">
+<div class="container">
+  <h2>核心悖论：各向异性不能预测检索质量</h2>
+  <p>三个主流 Embedding 模型的向量分散度（MPD）差了整整 4 倍，但实际检索效果大体相当。这说明我们一直以来用来衡量 Embedding 质量的指标其实是误导性的。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e8e4dc" x="340" y="24" text-anchor="middle">MPD 差 4 倍，检索效果却相当——各向异性指标失效</text>
+
+      <!-- Three models -->
+      <rect x="30" y="44" width="175" height="100" rx="8" fill="rgba(93,202,165,0.1)" stroke="rgba(93,202,165,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#5dcaa5" x="117" y="68" text-anchor="middle">bge-large</text>
+      <text font-family="Noto Sans SC" font-size="28" fill="#5dcaa5" x="117" y="118" text-anchor="middle" font-family="DM Mono">0.6</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#3a6850" x="117" y="136" text-anchor="middle">MPD（中等）</text>
+
+      <rect x="252" y="44" width="175" height="100" rx="8" fill="rgba(155,141,232,0.1)" stroke="rgba(155,141,232,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#b8aff0" x="340" y="68" text-anchor="middle">e5-large</text>
+      <text font-family="Noto Sans SC" font-size="28" fill="#b8aff0" x="340" y="118" text-anchor="middle" font-family="DM Mono">0.2</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#686080" x="340" y="136" text-anchor="middle">MPD（极度集中）</text>
+
+      <rect x="474" y="44" width="175" height="100" rx="8" fill="rgba(239,159,39,0.1)" stroke="rgba(239,159,39,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#efb84a" x="561" y="68" text-anchor="middle">all-mpnet</text>
+      <text font-family="Noto Sans SC" font-size="28" fill="#efb84a" x="561" y="118" text-anchor="middle" font-family="DM Mono">0.8</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#706030" x="561" y="136" text-anchor="middle">MPD（最分散）</text>
+
+      <!-- But same downstream -->
+      <line x1="117" y1="146" x2="117" y2="186" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none" marker-end="url(#arr)"/>
+      <line x1="340" y1="146" x2="340" y2="186" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none" marker-end="url(#arr)"/>
+      <line x1="561" y1="146" x2="561" y2="186" stroke="rgba(255,255,255,0.15)" stroke-width="1" fill="none" marker-end="url(#arr)"/>
+
+      <rect x="80" y="188" width="518" height="52" rx="8" fill="rgba(239,159,39,0.06)" stroke="rgba(239,159,39,0.2)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#efb84a" x="339" y="210" text-anchor="middle">下游检索效果：三者大体相当</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="339" y="230" text-anchor="middle">→ MPD / 各向异性 不能预测检索好坏，缺少真正的因果因素</text>
+    </svg>
+  </div>
+
+  <div class="info-box">
+    <strong>核心问题：</strong>如果向量集中度、各向异性、文本长度都不能解释检索失败，那到底是什么因素在真正驱动 embedding 退化？
+  </div>
+  <p>论文的答案是：<strong>语义偏移（Semantic Shift）</strong>——文本内部话题的跳跃程度，是此前一直被忽视的根本因素。</p>
+</div>
+</div>
+
+<!-- THEORY -->
+<div id="theory" class="section">
+<div class="container">
+  <h2>理论基础：语义稀释定理</h2>
+  <p>论文先证明一个数学定理：pooling 结果必须落在所有句向量的凸包内，句子越分散，均值越被拉向原点。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg">
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e8e4dc" x="340" y="24" text-anchor="middle">Theorem 1：句子语义越多样，pooling 向量离每个句子越远</text>
+
+      <!-- Left: homogeneous -->
+      <text font-family="Noto Sans SC" font-weight="500" font-size="12" fill="#5dcaa5" x="160" y="54" text-anchor="middle">语义相似的句子</text>
+      <ellipse cx="160" cy="168" rx="96" ry="96" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" stroke-dasharray="3 3"/>
+      <line x1="160" y1="168" x2="210" y2="106" stroke="#5dcaa5" stroke-width="1.5" fill="none"/>
+      <line x1="160" y1="168" x2="218" y2="118" stroke="#5dcaa5" stroke-width="1.5" fill="none"/>
+      <line x1="160" y1="168" x2="205" y2="99" stroke="#5dcaa5" stroke-width="1.5" fill="none"/>
+      <circle cx="210" cy="106" r="4" fill="#5dcaa5" fill-opacity="0.8"/>
+      <circle cx="218" cy="118" r="4" fill="#5dcaa5" fill-opacity="0.8"/>
+      <circle cx="205" cy="99" r="4" fill="#5dcaa5" fill-opacity="0.8"/>
+      <!-- pooled close -->
+      <line x1="160" y1="168" x2="210" y2="107" stroke="#ef9f27" stroke-width="3.5" fill="none"/>
+      <circle cx="210" cy="107" r="5" fill="#ef9f27"/>
+      <text font-family="Noto Sans SC" font-size="11" fill="#ef9f27" x="226" y="103" text-anchor="start">μ（忠实）</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="160" y="284" text-anchor="middle">μ 紧贴各句子向量</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#5dcaa5" x="160" y="300" text-anchor="middle">检索质量好 ✓</text>
+
+      <!-- Divider -->
+      <line x1="338" y1="40" x2="338" y2="290" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" stroke-dasharray="4 3"/>
+
+      <!-- Right: diverse -->
+      <text font-family="Noto Sans SC" font-weight="500" font-size="12" fill="#e8593c" x="510" y="54" text-anchor="middle">语义差异大的句子</text>
+      <ellipse cx="510" cy="168" rx="96" ry="96" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" stroke-dasharray="3 3"/>
+      <line x1="510" y1="168" x2="562" y2="108" stroke="#5dcaa5" stroke-width="1.5" fill="none"/>
+      <line x1="510" y1="168" x2="570" y2="195" stroke="#9b8de8" stroke-width="1.5" fill="none"/>
+      <line x1="510" y1="168" x2="453" y2="98" stroke="#e8593c" stroke-width="1.5" fill="none"/>
+      <circle cx="562" cy="108" r="4" fill="#5dcaa5" fill-opacity="0.8"/>
+      <circle cx="570" cy="195" r="4" fill="#9b8de8" fill-opacity="0.8"/>
+      <circle cx="453" cy="98" r="4" fill="#e8593c" fill-opacity="0.8"/>
+      <!-- pooled collapsed toward center -->
+      <line x1="510" y1="168" x2="528" y2="157" stroke="#ef9f27" stroke-width="3.5" fill="none"/>
+      <circle cx="528" cy="157" r="5" fill="#ef9f27"/>
+      <text font-family="Noto Sans SC" font-size="11" fill="#ef9f27" x="533" y="152" text-anchor="start">μ（偏离！）</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="510" y="284" text-anchor="middle">μ 被拉向原点，偏离所有句子</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#e8593c" x="510" y="300" text-anchor="middle">检索质量差 ✗</text>
+    </svg>
+  </div>
+
+  <h3>语义偏移的定义</h3>
+  <p>单独的局部演变或单独的全局分散都不足以造成严重退化，两者的乘积才是真正的风险信号：</p>
+
+  <div class="info-box" style="font-family:'DM Mono',monospace; font-size:15px; text-align:center; letter-spacing:0.02em;">
+    Shift(k) = Local(k) × Disp(k)
+  </div>
+
+  <table>
+    <thead><tr><th>分量</th><th>含义</th><th>公式</th></tr></thead>
+    <tbody>
+      <tr><td>Local(k)</td><td>相邻句子间余弦距离之和（局部演变）</td><td>Σ (1 - cos(eᵢ, eᵢ₊₁))</td></tr>
+      <tr><td>Disp(k)</td><td>所有句子对的平均余弦距离（全局分散）</td><td>均值 pairwise cosine dist</td></tr>
+      <tr class="highlight-row"><td>Shift(k)</td><td>两者之积，既跳跃又分散才会严重损害 pooling</td><td>Local × Disp</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- EXPERIMENT -->
+<div id="experiment" class="section">
+<div class="container">
+  <h2>关键实验：三种拼接方式解耦长度与语义</h2>
+  <p>把多个句子拼成更长的文本，三种方式的<strong>长度完全一样</strong>，唯一变量是语义多样性。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e8e4dc" x="340" y="24" text-anchor="middle">相同长度，不同语义混杂程度 → 完全不同的检索结果</text>
+
+      <!-- Repeat -->
+      <rect x="30" y="44" width="185" height="90" rx="8" fill="rgba(93,202,165,0.1)" stroke="rgba(93,202,165,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="12" fill="#5dcaa5" x="122" y="66" text-anchor="middle">重复拼接（Repeat）</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="122" y="86" text-anchor="middle">s1 s1 s1 s1 s1...</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="122" y="104" text-anchor="middle">同一句子重复 N 次</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#3a6850" x="122" y="122" text-anchor="middle">Shift = 0，检索几乎不受影响 ✓</text>
+
+      <!-- Sequential -->
+      <rect x="247" y="44" width="185" height="90" rx="8" fill="rgba(239,159,39,0.1)" stroke="rgba(239,159,39,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="12" fill="#efb84a" x="340" y="66" text-anchor="middle">顺序拼接（Sequential）</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="340" y="86" text-anchor="middle">s1 s2 s3 s4 s5...</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="340" y="104" text-anchor="middle">相邻句子顺序拼接</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#706030" x="340" y="122" text-anchor="middle">Shift 中等，检索质量中度下降</text>
+
+      <!-- Random -->
+      <rect x="464" y="44" width="185" height="90" rx="8" fill="rgba(232,89,60,0.1)" stroke="rgba(232,89,60,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="12" fill="#e8795c" x="557" y="66" text-anchor="middle">随机拼接（Random）</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="557" y="86" text-anchor="middle">s1 + 随机 sX + 随机 sY...</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="557" y="104" text-anchor="middle">全局随机抽取句子拼接</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#703028" x="557" y="122" text-anchor="middle">Shift 最强，检索严重受损 ✗</text>
+
+      <!-- Arrows down -->
+      <line x1="122" y1="136" x2="122" y2="170" stroke="rgba(255,255,255,0.12)" stroke-width="1" fill="none" marker-end="url(#arr3)"/>
+      <line x1="340" y1="136" x2="340" y2="170" stroke="rgba(255,255,255,0.12)" stroke-width="1" fill="none" marker-end="url(#arr3)"/>
+      <line x1="557" y1="136" x2="557" y2="170" stroke="rgba(255,255,255,0.12)" stroke-width="1" fill="none" marker-end="url(#arr3)"/>
+
+      <!-- Result bars (schematic) -->
+      <rect x="80" y="172" width="85" height="22" rx="4" fill="rgba(93,202,165,0.5)"/>
+      <text font-family="DM Mono" font-size="11" fill="#5dcaa5" x="172" y="187" text-anchor="start"> Overlap@1 ≈ 0.99</text>
+
+      <rect x="298" y="172" width="55" height="22" rx="4" fill="rgba(239,159,39,0.5)"/>
+      <text font-family="DM Mono" font-size="11" fill="#efb84a" x="358" y="187" text-anchor="start"> ≈ 0.72</text>
+
+      <rect x="515" y="172" width="40" height="22" rx="4" fill="rgba(232,89,60,0.5)"/>
+      <text font-family="DM Mono" font-size="11" fill="#e8795c" x="560" y="187" text-anchor="start"> ≈ 0.57</text>
+
+      <!-- Conclusion -->
+      <rect x="30" y="218" width="620" height="80" rx="8" fill="rgba(239,159,39,0.05)" stroke="rgba(239,159,39,0.15)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#efb84a" x="340" y="244" text-anchor="middle">结论：三种方式长度完全相同</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="340" y="266" text-anchor="middle">检索质量差异完全由语义偏移强度决定，与文本长度无关</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="340" y="286" text-anchor="middle">在 5 个模型 × 5 个语料库上结论一致</text>
+    </svg>
+  </div>
+</div>
+</div>
+
+<!-- APPLICATION -->
+<div id="application" class="section">
+<div class="container">
+  <h2>实际应用：Semantic Shift Splitter</h2>
+  <p>把语义偏移信号直接用于 RAG 分块：实时监测当前 chunk 的 Shift 值，超过自适应阈值 τ 时切分。</p>
+
+  <div class="info-box" style="font-family:'DM Mono',monospace; font-size:14px; text-align:center;">
+    当 Shift(k) = Local(k) × Disp(k) &gt; τ  →  在此处切分
+  </div>
+
+  <h3>对比结果（ArXiv，约 3 句/块）</h3>
+  <table>
+    <thead><tr><th>方法</th><th>F1 边界检测</th><th>Pk ↓</th><th>块大小方差</th></tr></thead>
+    <tbody>
+      <tr><td>固定长度分块</td><td>0.250</td><td>0.535</td><td>0.004（死板）</td></tr>
+      <tr><td>标准语义分块</td><td>0.207</td><td>0.409</td><td>5.395（极不稳定）</td></tr>
+      <tr class="highlight-row"><td>Shift Splitter（本文）</td><td><strong>0.473</strong>（+90%）</td><td><strong>0.373</strong></td><td><strong>0.977</strong>（稳定且自适应）</td></tr>
+    </tbody>
+  </table>
+
+  <p>标准语义分块的块大小方差极大（5.395 → 41 随粒度增大），意味着一堆极短和极长的 chunk 混在一起，严重影响 RAG 检索稳定性。Shift Splitter 同时实现了<strong>高质量边界</strong>和<strong>稳定块大小</strong>。</p>
+</div>
+</div>
+
+<!-- THOUGHTS -->
+<div id="thoughts" class="section">
+<div class="container">
+  <h2>个人思考</h2>
+
+  <div class="thought">
+    <div class="thought-label">对"各向异性有害"论断的推翻</div>
+    这篇论文的一个重要贡献是厘清了一个长期的混淆：各向异性（向量集中）本身不是问题，只有当它是由语义偏移引发时才有害。纯长度导致的各向异性基本无害。这解释了为什么 e5-large（MPD=0.2，高度集中）和 all-mpnet（MPD=0.8）检索效果却相近。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">对 RAG 实践的启示</div>
+    现在大多数 RAG 分块策略是 length-aware 的（固定 token 窗口）。本文表明应该是 <strong>shift-aware</strong> 的：语义稳定的长段落可以保持大块，语义跳跃的段落应该更细粒度地切分。这对实际工程有直接指导意义。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">与 AttnRes 的联系</div>
+    AttnRes 说"pooling 后信息被稀释了，用注意力来选择性聚合"；这篇说"pooling 后语义被平滑了，根本原因是文本内部语义太跳跃"。两篇论文都在研究<strong>聚合操作如何损失信息</strong>——一个从修复角度，一个从诊断角度。
+  </div>
+
+  <h3>相关论文</h3>
+  <p>
+    <span class="tag tag-amber">Zhou et al. 2025（length-induced collapse）</span>
+    <span class="tag tag-blue">Ethayarajh 2019（各向异性）</span>
+    <span class="tag tag-teal">BGE / E5 / all-mpnet</span>
+    <span class="tag tag-teal">SimCSE</span>
+  </p>
+</div>
+</div>
+
+<footer>
+  <div class="container">
+    <a href="https://arxiv.org/abs/2603.21437">arXiv:2603.21437</a> · Hang Gao, Rutgers University · 笔记生成于 2026-03-31
+  </div>
+</footer>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  return false;
+}
+</script>
+</body>
+</html>
