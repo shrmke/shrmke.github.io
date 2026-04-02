@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>论文阅读笔记 · shrmke</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0e0f11;
+      --bg2: #161719;
+      --text: #e8e6df;
+      --text2: #9a9890;
+      --border: rgba(255,255,255,0.08);
+      --accent: #7eb8f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(126,184,247,0.08), transparent 55%), var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans SC', sans-serif;
+      line-height: 1.7;
+      padding: 48px 16px 64px;
+    }
+    .shell {
+      max-width: 900px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg2);
+      padding: 48px 42px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(28px, 4vw, 46px);
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+    .tagline {
+      font-size: 16px;
+      color: var(--text2);
+      border-left: 2px solid var(--accent);
+      padding-left: 14px;
+      margin-bottom: 32px;
+      font-style: italic;
+    }
+    .links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      margin-right: 18px;
+      text-transform: uppercase;
+    }
+    .links a:hover { opacity: 0.8; }
+    #log {
+      margin-top: 36px;
+    }
+    #log h1 { display: none; } /* hide duplicated title from markdown */
+    #log table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      margin-top: 20px;
+    }
+    #log th, #log td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      text-align: left;
+      color: var(--text2);
+    }
+    #log th {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    #log td:first-child {
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    #log a { color: var(--accent); }
+    .error {
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: rgba(232,89,60,0.08);
+      border: 1px solid rgba(232,89,60,0.25);
+      border-radius: 10px;
+      color: #f8c0b0;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>论文阅读笔记</h1>
+    <p class="tagline">把每日的 HTML 笔记集中在一个列表里，方便直接浏览&分享。</p>
+    <div class="links">
+      <a href="READING_LOG.md">原始 Markdown</a>
+      <a href="https://github.com/shrmke/shrmke.github.io">GitHub Repo</a>
+    </div>
+    <div id="log">正在加载记录…</div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    async function loadLog() {
+      const container = document.getElementById('log');
+      try {
+        const res = await fetch('READING_LOG.md');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const md = await res.text();
+        container.innerHTML = marked.parse(md);
+      } catch (err) {
+        container.innerHTML = '<div class=\"error\">无法加载 READING_LOG.md：' + err.message + '</div>';
+      }
+    }
+    loadLog();
+  </script>
+</body>
+</html>
