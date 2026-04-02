@@ -9,3 +9,5 @@
 | 2026-03-31 | Semantic Shift | [arXiv:2603.21437](https://arxiv.org/abs/2603.21437) | Embedding · RAG 分块 · 语义偏移 | 提出 Shift(k)=Local×Disp 解释长文本检索退化，Shift Splitter 在 ArXiv 边界检测 F1 提升 90% 并保持稳定块大小。 | [HTML](2026-03-31-semantic-shift.html) |
 
 > 更新方法：新增 HTML 后，将日期命名保持 `YYYY-MM-DD-title.html`，并在此表追加一行，记录来源链接、核心关注点和一句话摘要。
+
+> 2026-04-02：GitHub Pages 发布在 `shrmke.github.io`，根目录的 `index.html` 会自动读取这份表格。
