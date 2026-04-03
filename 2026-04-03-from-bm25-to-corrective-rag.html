@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>From BM25 to Corrective RAG — 论文速览</title>
+  <style>
+    body { font-family: "Noto Sans SC", sans-serif; margin: 40px auto; max-width: 820px; line-height: 1.7; color: #1f2333; background: #fafbff; }
+    h1 { font-size: 32px; margin-bottom: 4px; }
+    h2 { font-size: 20px; margin-top: 28px; border-left: 3px solid #4a7bf7; padding-left: 12px; }
+    p { margin: 12px 0; }
+    .meta { color: #6b7287; font-size: 14px; }
+    .card { background: #fff; border-radius: 12px; border: 1px solid #e0e7ff; padding: 22px 26px; margin-top: 18px; box-shadow: 0 8px 20px rgba(74,123,247,0.08); }
+    ul { margin: 10px 0 10px 20px; }
+    strong { color: #0f172a; }
+    .tag { display: inline-block; border-radius: 999px; padding: 4px 12px; font-size: 13px; background: #e0ebff; color: #3257b8; margin-right: 8px; }
+    a { color: #3558ff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>From BM25 to Corrective RAG</h1>
+  <p class="meta">2026-04-03 · arXiv: <a href="https://arxiv.org/abs/2604.00491">2604.00491</a> · Text + Table Retrieval</p>
+  <div class="tag">T²-RAGBench</div>
+  <div class="tag">Retrieval Strategy</div>
+  <div class="card">
+    <h2>测试集速记</h2>
+    <ul>
+      <li><strong>Benchmark</strong>：T²-RAGBench（23,088 个查询，7,318 份金融文档，SEC 10-K/10-Q + 年报表格）。</li>
+      <li><strong>数据形态</strong>：文本与精确数字表格混合，文档切成 text chunk + markdown 表格单元。</li>
+      <li><strong>评测指标</strong>：Recall@{5,20}、MRR@{3,10} 以及 Number Match，覆盖检索与生成链路。</li>
+    </ul>
+    <p>论文比较了 10 条检索路线，涵盖 BM25、text-embedding-3-large、混合 RRF、HyDE、Multi-Query、Context Retrieval、CRAG（Corrective Retrieval Augmented Generation）等。</p>
+  </div>
+  <div class="card">
+    <h2>作者结论</h2>
+    <ul>
+      <li><strong>两阶段管道最佳</strong>：BM25 + 稠密检索 RRF 融合，再用 Cross-Encoder 重排序 → Recall@5 = 0.816，MRR@3 = 0.605，显著领先所有单阶段方法。</li>
+      <li><strong>BM25 仍是基石</strong>：在金融语料上 BM25 几乎全面压过 text-embedding-3-large，体现精确术语/实体匹配的重要性。</li>
+      <li><strong>查询扩展收益有限</strong>：HyDE 和 Multi-Query 基本无增益，HyDE 甚至拖低 Recall@5（0.544）。</li>
+      <li><strong>Context Retrieval 值得保留</strong>：索引时前置 LLM 摘要带来 2~3pp 的稳定提升。</li>
+      <li><strong>CRAG 只带来小幅收益</strong>：自适应检索 Recall@5 = 0.658，略好于 BM25，但仍落后于简单的混合检索（0.695）。</li>
+      <li><strong>表格仍是主要瓶颈</strong>：73% 的失败来自表格结构不匹配；作者建议结合结构化解析或专门的表格检索器。</li>
+    </ul>
+    <p>实务建议：先用混合检索 + Cross-Encoder 重排序，再考虑 Context Retrieval；对需要精确数字的场景谨慎使用 HyDE，且务必在领域数据上实测，不要仅依赖通用榜单（MTEB/BEIR）的排名。</p>
+  </div>
+</body>
+</html>
