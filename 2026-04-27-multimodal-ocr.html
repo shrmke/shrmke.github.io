@@ -283,33 +283,14 @@
   <h2>个人思考</h2>
 
   <div class="thought">
-    <div class="thought-label">对 RAG 管线的意义</div>
-    传统 RAG 管线在文档解析阶段丢掉了图表信息（裁成图片后检索效果极差），这是公认的瓶颈之一。MOCR 把图表转成 SVG 代码，意味着这些视觉元素可以被当作文本来索引和检索，直接补上了 RAG 管线中"文档解析"环节最大的短板。结合目录中 OHRbench 对"文档解析质量影响 RAG 性能"的评测，MOCR 方向看起来是正解。
+    <div class="thought-label">实测：模糊数据表现优于 MinerU 2.5</div>
+    拿欧坚的数据试了一下，在数据比较模糊的情况下，dots.mocr 的效果比 MinerU 2.5 要好。
   </div>
 
   <div class="thought">
-    <div class="thought-label">3B 的工程意义</div>
-    模型只有 3B，但在文档解析上击败了所有开源模型、在 SVG 生成上甚至超过 Gemini 3 Pro。这说明在垂直任务上，精心设计的数据引擎 + 训练策略比堆参数更重要。对于需要本地部署 OCR 的场景，3B 意味着单卡即可推理，成本优势明显。
+    <div class="thought-label">OCR Arena 评测框架可参考</div>
+    自研的 OCR Arena 完全用 VLM 进行测评（Gemini 3 Flash 做 Judge），judge prompt 也给出了，可以参考。
   </div>
-
-  <div class="thought">
-    <div class="thought-label">局限与开放问题</div>
-    当前 dots.mocr 不能一次性同时输出全页文档文本 + SVG（需要分任务调用），这在实际 RAG 管线中意味着要跑两遍。另外，3B 规模下复杂表格和数学公式仍然吃力——这恰好是 T²-RAGBench 论文指出的金融文档 73% 失败来源。
-  </div>
-
-  <div class="thought">
-    <div class="thought-label">与 MinerU / DISCO 的关系</div>
-    目录中的 MinerU 和 DISCO 也是文档解析方向的工作。MinerU 是传统管线（规则 + 模型混合），DISCO 侧重评测。MOCR 代表的是纯端到端 VLM 路线。两条路线的融合（VLM 做主体 + 规则做兜底）可能是近期工程最佳实践。
-  </div>
-
-  <h3>相关论文</h3>
-  <p>
-    <span class="tag tag-teal">dots.ocr（前代，arXiv:2512.02498）</span>
-    <span class="tag tag-blue">MinerU（传统管线路线）</span>
-    <span class="tag tag-amber">OHRbench（解析质量→RAG 性能）</span>
-    <span class="tag tag-coral">T²-RAGBench（表格仍是瓶颈）</span>
-    <span class="tag tag-teal">DISCO（文档解析评测）</span>
-  </p>
 </div>
 </div>
 
