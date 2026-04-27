@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multimodal OCR — 论文笔记</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0d; --bg2: #181714; --bg3: #201e1b;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+    --text: #e8e4dc; --text2: #98938a; --text3: #565250;
+    --accent: #ef9f27; --accent2: #c47d10;
+    --teal: #5dcaa5; --amber: #ef9f27; --coral: #e8593c; --purple: #9b8de8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; font-weight: 300; line-height: 1.8; }
+  header { border-bottom: 1px solid var(--border); padding: 48px 0 36px; position: relative; overflow: hidden; }
+  header::before { content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 500px; height: 280px; background: radial-gradient(ellipse, rgba(239,159,39,0.07) 0%, transparent 70%); pointer-events: none; }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 32px; }
+  .meta-row { display: flex; gap: 16px; align-items: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); margin-bottom: 20px; flex-wrap: wrap; }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); }
+  h1 { font-family: 'Instrument Serif', serif; font-size: clamp(26px, 4vw, 40px); font-weight: 400; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 16px; }
+  .tagline { font-size: 16px; color: var(--text2); max-width: 640px; border-left: 2px solid var(--accent2); padding-left: 14px; font-style: italic; }
+  nav { display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  nav a { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); text-decoration: none; padding: 14px 20px; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.2s, border-color 0.2s; }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border2); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .section { padding: 52px 0; border-bottom: 1px solid var(--border); display: none; animation: fadeIn 0.25s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  h2 { font-family: 'Instrument Serif', serif; font-size: 26px; font-weight: 400; margin-bottom: 28px; }
+  h3 { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin: 32px 0 12px; font-family: 'DM Mono', monospace; }
+  p { color: var(--text2); margin-bottom: 14px; font-size: 15px; }
+  strong { color: var(--text); font-weight: 500; }
+  .diagram-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 32px 24px; margin: 28px 0; overflow-x: auto; }
+  .diagram-card svg { display: block; width: 100%; }
+  .info-box { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 14px; color: var(--text2); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 24px 0; }
+  th { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--border2); }
+  td { padding: 12px 16px; color: var(--text2); border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text); }
+  .highlight-row td { background: rgba(239,159,39,0.05); color: var(--text); }
+  .tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 11px; padding: 3px 10px; border-radius: 4px; margin: 2px; }
+  .tag-teal { background: rgba(93,202,165,0.1); color: var(--teal); border: 1px solid rgba(93,202,165,0.2); }
+  .tag-blue { background: rgba(126,184,247,0.1); color: #7eb8f7; border: 1px solid rgba(126,184,247,0.2); }
+  .tag-amber { background: rgba(239,159,39,0.1); color: var(--amber); border: 1px solid rgba(239,159,39,0.2); }
+  .tag-coral { background: rgba(232,89,60,0.1); color: var(--coral); border: 1px solid rgba(232,89,60,0.2); }
+  .thought { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin: 16px 0; font-size: 14px; color: var(--text2); }
+  .thought-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  footer { padding: 32px 0; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); text-align: center; }
+  footer a { color: var(--text3); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="meta-row">
+      <span>2026-04-27</span>
+      <span class="dot"></span>
+      <span>RedNote (Xiaohongshu) HiLab</span>
+      <span class="dot"></span>
+      <span><a href="https://arxiv.org/abs/2603.13032" style="color:var(--accent);text-decoration:none;">arXiv:2603.13032</a></span>
+      <span class="dot"></span>
+      <span><a href="https://github.com/rednote-hilab/dots.mocr" style="color:var(--accent);text-decoration:none;">GitHub</a></span>
+    </div>
+    <h1>Multimodal OCR: Parse Anything from Documents</h1>
+    <p class="tagline">3B 参数统一文本与视觉符号解析，图表/化学式/UI 直接输出 SVG，开源文档解析 SOTA</p>
+  </div>
+</header>
+
+<nav>
+  <div class="container" style="display:flex;padding:0 32px;">
+    <a href="#" class="active" onclick="show('overview',this)">问题与动机</a>
+    <a href="#" onclick="show('arch',this)">模型架构</a>
+    <a href="#" onclick="show('data',this)">数据与训练</a>
+    <a href="#" onclick="show('experiment',this)">关键实验</a>
+    <a href="#" onclick="show('thoughts',this)">个人思考</a>
+  </div>
+</nav>
+
+<!-- OVERVIEW -->
+<div id="overview" class="section active">
+<div class="container">
+  <h2>核心问题：视觉元素是文档中被丢弃的"另一半"</h2>
+  <p>传统 OCR 管线只关注文本提取，文档中大量的图表、流程图、化学结构、UI 布局等视觉元素要么被裁成栅格图片，要么直接忽略。这些视觉符号承载了大量结构化信息，却无法被下游系统（RAG、知识库）复用。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e8e4dc" x="340" y="24" text-anchor="middle">传统 OCR vs MOCR：从"只看文字"到"解析一切"</text>
+
+      <!-- Traditional OCR -->
+      <rect x="30" y="48" width="280" height="150" rx="8" fill="rgba(232,89,60,0.08)" stroke="rgba(232,89,60,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e8795c" x="170" y="72" text-anchor="middle">传统 OCR</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#5dcaa5" x="170" y="100" text-anchor="middle">文本 → Markdown / 纯文本 ✓</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#e8593c" x="170" y="124" text-anchor="middle">图表 → 裁成图片或丢弃 ✗</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#e8593c" x="170" y="148" text-anchor="middle">化学式 → 丢弃 ✗</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#e8593c" x="170" y="172" text-anchor="middle">UI 布局 → 丢弃 ✗</text>
+
+      <!-- MOCR -->
+      <rect x="370" y="48" width="280" height="150" rx="8" fill="rgba(93,202,165,0.08)" stroke="rgba(93,202,165,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#5dcaa5" x="510" y="72" text-anchor="middle">MOCR（本文）</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#5dcaa5" x="510" y="100" text-anchor="middle">文本 → Markdown ✓</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#5dcaa5" x="510" y="124" text-anchor="middle">图表 → SVG 代码 ✓</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#5dcaa5" x="510" y="148" text-anchor="middle">化学式 → SVG 代码 ✓</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#5dcaa5" x="510" y="172" text-anchor="middle">UI 布局 → SVG 代码 ✓</text>
+    </svg>
+  </div>
+
+  <div class="info-box">
+    <strong>核心思路：</strong>把文档中的视觉符号提升为与文本同等的"一等公民"，统一用一个自回归模型输出结构化表示——文本输出转录文字，可紧凑描述的图形直接输出 SVG 代码。
+  </div>
+</div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div id="arch" class="section">
+<div class="container">
+  <h2>模型架构：dots.mocr（3B）</h2>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg">
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e8e4dc" x="340" y="24" text-anchor="middle">三组件架构：Vision Encoder + Connector + Language Decoder</text>
+
+      <!-- Vision Encoder -->
+      <rect x="30" y="60" width="185" height="130" rx="8" fill="rgba(93,202,165,0.1)" stroke="rgba(93,202,165,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#5dcaa5" x="122" y="84" text-anchor="middle">Vision Encoder</text>
+      <text font-family="DM Mono" font-size="20" fill="#5dcaa5" x="122" y="120" text-anchor="middle">1.2B</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="122" y="144" text-anchor="middle">从零训练</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="122" y="164" text-anchor="middle">原生支持 ~1100 万像素</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#3a6850" x="122" y="182" text-anchor="middle">高分辨率保留细节</text>
+
+      <!-- Connector -->
+      <rect x="247" y="60" width="185" height="130" rx="8" fill="rgba(239,159,39,0.1)" stroke="rgba(239,159,39,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#efb84a" x="340" y="84" text-anchor="middle">Multimodal Connector</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="340" y="120" text-anchor="middle">轻量桥接模块</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="340" y="148" text-anchor="middle">视觉特征 → 语言空间</text>
+
+      <!-- Language Decoder -->
+      <rect x="464" y="60" width="185" height="130" rx="8" fill="rgba(155,141,232,0.1)" stroke="rgba(155,141,232,0.25)" stroke-width="0.5"/>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#b8aff0" x="557" y="84" text-anchor="middle">Language Decoder</text>
+      <text font-family="DM Mono" font-size="20" fill="#b8aff0" x="557" y="120" text-anchor="middle">1.5B</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#98938a" x="557" y="144" text-anchor="middle">Qwen2.5-1.5B base</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#686080" x="557" y="164" text-anchor="middle">未用 chat 版本</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#686080" x="557" y="182" text-anchor="middle">自回归生成</text>
+
+      <!-- Arrows -->
+      <line x1="217" y1="125" x2="245" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="434" y1="125" x2="462" y2="125" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Output -->
+      <rect x="120" y="220" width="440" height="44" rx="8" fill="rgba(239,159,39,0.06)" stroke="rgba(239,159,39,0.15)" stroke-width="0.5"/>
+      <text font-family="DM Mono" font-size="12" fill="#efb84a" x="340" y="246" text-anchor="middle">(bbox, category, payload) → 文本转录 | SVG 代码 | 栅格保留</text>
+    </svg>
+  </div>
+
+  <h3>输出格式</h3>
+  <p>对每个文档元素，模型输出一个有序元组序列 <strong>(B<sub>k</sub>, c<sub>k</sub>, p<sub>k</sub>)</strong>：</p>
+  <table>
+    <thead><tr><th>元素类型</th><th>Payload 输出</th><th>示例</th></tr></thead>
+    <tbody>
+      <tr><td>文本区域</td><td>文字转录</td><td>段落、标题、表格文本</td></tr>
+      <tr class="highlight-row"><td>可结构化图形</td><td>SVG 代码</td><td>图表、化学式、UI、流程图</td></tr>
+      <tr><td>复杂自然图像</td><td>栅格保留</td><td>照片、复杂插图</td></tr>
+    </tbody>
+  </table>
+
+  <h3>两个 checkpoint 变体</h3>
+  <div class="info-box">
+    <strong>dots.mocr</strong> — 通用文档解析（文本 + 表格 + 公式 + 图形）<br/>
+    <strong>dots.mocr-svg</strong> — 强化 SVG 生成能力，优先把图形转为可编辑向量代码
+  </div>
+</div>
+</div>
+
+<!-- DATA & TRAINING -->
+<div id="data" class="section">
+<div class="container">
+  <h2>数据引擎与训练策略</h2>
+
+  <h3>四路数据来源</h3>
+  <table>
+    <thead><tr><th>来源</th><th>方法</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td>PDF 文档</td><td>dots.ocr 自动标注 + 按语言/领域/布局分层采样</td><td>文档解析主体数据</td></tr>
+      <tr><td>网页</td><td>渲染为图片，对齐 HTML/DOM 结构信号</td><td>布局理解 + 结构化表示</td></tr>
+      <tr class="highlight-row"><td>SVG 图形</td><td>多源采集 → svgo 标准化 → 感知哈希去重 → 复杂度感知采样</td><td>图形→SVG 核心训练数据</td></tr>
+      <tr><td>通用视觉/OCR</td><td>公开数据集混合</td><td>维持泛化能力</td></tr>
+    </tbody>
+  </table>
+
+  <h3>三阶段渐进式预训练</h3>
+  <div class="diagram-card">
+    <svg viewBox="0 0 680 140" xmlns="http://www.w3.org/2000/svg">
+      <!-- Stage 1 -->
+      <rect x="20" y="20" width="190" height="80" rx="8" fill="rgba(93,202,165,0.1)" stroke="rgba(93,202,165,0.25)" stroke-width="0.5"/>
+      <text font-family="DM Mono" font-size="11" fill="#5dcaa5" x="115" y="42" text-anchor="middle">STAGE 1</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="115" y="62" text-anchor="middle">通用视觉-语言对齐</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#565250" x="115" y="82" text-anchor="middle">建立稳定接口</text>
+
+      <line x1="212" y1="60" x2="242" y2="60" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Stage 2 -->
+      <rect x="244" y="20" width="190" height="80" rx="8" fill="rgba(239,159,39,0.1)" stroke="rgba(239,159,39,0.25)" stroke-width="0.5"/>
+      <text font-family="DM Mono" font-size="11" fill="#efb84a" x="339" y="42" text-anchor="middle">STAGE 2</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="339" y="62" text-anchor="middle">通用视觉 + 文档解析混合</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#565250" x="339" y="82" text-anchor="middle">分辨率提升</text>
+
+      <line x1="436" y1="60" x2="466" y2="60" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Stage 3 -->
+      <rect x="468" y="20" width="190" height="80" rx="8" fill="rgba(232,89,60,0.1)" stroke="rgba(232,89,60,0.25)" stroke-width="0.5"/>
+      <text font-family="DM Mono" font-size="11" fill="#e8795c" x="563" y="42" text-anchor="middle">STAGE 3</text>
+      <text font-family="Noto Sans SC" font-size="12" fill="#98938a" x="563" y="62" text-anchor="middle">MOCR 专项训练</text>
+      <text font-family="Noto Sans SC" font-size="11" fill="#565250" x="563" y="82" text-anchor="middle">图形→SVG、高分辨率</text>
+
+      <text font-family="Noto Sans SC" font-size="11" fill="#565250" x="340" y="128" text-anchor="middle">分辨率逐阶段递增 · 单一自回归目标贯穿全程 · 最后做指令微调</text>
+    </svg>
+  </div>
+
+  <div class="info-box">
+    <strong>质量控制策略：</strong>预训练阶段宽松（去除明显噪声，保持多样性）；指令微调阶段严格（渲染对比输入页面）。
+  </div>
+</div>
+</div>
+
+<!-- EXPERIMENT -->
+<div id="experiment" class="section">
+<div class="container">
+  <h2>关键实验结果</h2>
+
+  <h3>文档解析：OCR Arena Elo 排名</h3>
+  <table>
+    <thead><tr><th>模型</th><th>olmOCR-Bench</th><th>OmniDocBench v1.5</th><th>XDocParse</th><th>平均 Elo</th></tr></thead>
+    <tbody>
+      <tr><td>Gemini 3 Pro</td><td>1180.4</td><td>1128.0</td><td>1323.7</td><td>1210.7</td></tr>
+      <tr class="highlight-row"><td>dots.mocr</td><td><strong>1104.4</strong></td><td><strong>1059.0</strong></td><td><strong>1210.7</strong></td><td><strong>1124.7</strong></td></tr>
+      <tr><td>dots.ocr（前代）</td><td>1041.1</td><td>1027.2</td><td>1190.3</td><td>1086.2</td></tr>
+    </tbody>
+  </table>
+  <p><strong>开源模型第一</strong>，仅次于 Gemini 3 Pro（参数量远大于 3B 的闭源模型）。olmOCR-Bench 总分 <strong>83.9</strong>（SOTA），其中表格子集 <strong>90.7</strong>。</p>
+
+  <h3>图形→SVG：ISVGEN 得分</h3>
+  <table>
+    <thead><tr><th>Benchmark</th><th>dots.mocr-svg</th><th>Gemini 3 Pro</th><th>OCRVerse</th></tr></thead>
+    <tbody>
+      <tr class="highlight-row"><td>UniSVG 综合</td><td><strong>0.902</strong></td><td>0.735</td><td>0.763</td></tr>
+      <tr><td>ChartMimic</td><td><strong>0.905</strong></td><td>0.788</td><td>—</td></tr>
+      <tr><td>Design2Code</td><td><strong>0.834</strong></td><td>0.760</td><td>—</td></tr>
+      <tr><td>ChemDraw</td><td><strong>0.901</strong></td><td>0.839</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>图形→SVG 方向 <strong>全面超越 Gemini 3 Pro</strong>，UniSVG 综合得分高出 22.7%。</p>
+
+  <h3>通用视觉任务</h3>
+  <table>
+    <thead><tr><th>Benchmark</th><th>dots.mocr</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>DocVQA</td><td>91.85</td><td>文档问答</td></tr>
+      <tr><td>ChartQA</td><td>83.2</td><td>图表问答</td></tr>
+      <tr><td>CharXiv Reasoning</td><td><strong>55.3</strong></td><td>超过 Qwen3-VL-4B 的 39.7</td></tr>
+      <tr><td>OCRBench</td><td>86.0</td><td>通用 OCR</td></tr>
+    </tbody>
+  </table>
+
+  <h3>OCR Arena：论文提出的新评测框架</h3>
+  <div class="info-box">
+    用 <strong>Gemini 3 Flash</strong> 做 LLM-as-Judge，对称双向比较消除位置偏差，<strong>Elo 评分 + 1000 次 bootstrap 重采样</strong>。解决传统 OCR 规则指标（如编辑距离）的脆弱性问题——传统指标对格式差异过度敏感但对语义错误不敏感。
+  </div>
+</div>
+</div>
+
+<!-- THOUGHTS -->
+<div id="thoughts" class="section">
+<div class="container">
+  <h2>个人思考</h2>
+
+  <div class="thought">
+    <div class="thought-label">对 RAG 管线的意义</div>
+    传统 RAG 管线在文档解析阶段丢掉了图表信息（裁成图片后检索效果极差），这是公认的瓶颈之一。MOCR 把图表转成 SVG 代码，意味着这些视觉元素可以被当作文本来索引和检索，直接补上了 RAG 管线中"文档解析"环节最大的短板。结合目录中 OHRbench 对"文档解析质量影响 RAG 性能"的评测，MOCR 方向看起来是正解。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">3B 的工程意义</div>
+    模型只有 3B，但在文档解析上击败了所有开源模型、在 SVG 生成上甚至超过 Gemini 3 Pro。这说明在垂直任务上，精心设计的数据引擎 + 训练策略比堆参数更重要。对于需要本地部署 OCR 的场景，3B 意味着单卡即可推理，成本优势明显。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">局限与开放问题</div>
+    当前 dots.mocr 不能一次性同时输出全页文档文本 + SVG（需要分任务调用），这在实际 RAG 管线中意味着要跑两遍。另外，3B 规模下复杂表格和数学公式仍然吃力——这恰好是 T²-RAGBench 论文指出的金融文档 73% 失败来源。
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">与 MinerU / DISCO 的关系</div>
+    目录中的 MinerU 和 DISCO 也是文档解析方向的工作。MinerU 是传统管线（规则 + 模型混合），DISCO 侧重评测。MOCR 代表的是纯端到端 VLM 路线。两条路线的融合（VLM 做主体 + 规则做兜底）可能是近期工程最佳实践。
+  </div>
+
+  <h3>相关论文</h3>
+  <p>
+    <span class="tag tag-teal">dots.ocr（前代，arXiv:2512.02498）</span>
+    <span class="tag tag-blue">MinerU（传统管线路线）</span>
+    <span class="tag tag-amber">OHRbench（解析质量→RAG 性能）</span>
+    <span class="tag tag-coral">T²-RAGBench（表格仍是瓶颈）</span>
+    <span class="tag tag-teal">DISCO（文档解析评测）</span>
+  </p>
+</div>
+</div>
+
+<footer>
+  <div class="container">
+    <a href="https://arxiv.org/abs/2603.13032">arXiv:2603.13032</a> · <a href="https://github.com/rednote-hilab/dots.mocr">GitHub</a> · RedNote HiLab · 笔记生成于 2026-04-27
+  </div>
+</footer>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  return false;
+}
+</script>
+</body>
+</html>
