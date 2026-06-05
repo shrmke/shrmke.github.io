@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thinking with Visual Primitives — 论文笔记</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f10; --bg2: #15191b; --bg3: #1e2426;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+    --text: #e7e4dc; --text2: #aaa69c; --text3: #68635d;
+    --accent: #5dcaa5; --blue: #7eb8f7; --amber: #efb84a; --red: #e8795c; --purple: #b8aff0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(circle at 50% -8%, rgba(93,202,165,0.10), transparent 36%),
+      linear-gradient(180deg, #101315 0%, #0d0f10 48%, #111516 100%);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    line-height: 1.78;
+  }
+  header { border-bottom: 1px solid var(--border); padding: 48px 0 36px; }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 32px; }
+  .meta-row {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); margin-bottom: 18px;
+  }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); }
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 400;
+    line-height: 1.22;
+    margin-bottom: 16px;
+  }
+  .tagline {
+    font-size: 16px; color: var(--text2); max-width: 760px;
+    border-left: 2px solid var(--accent); padding-left: 14px; font-style: italic;
+  }
+  nav { border-bottom: 1px solid var(--border); overflow-x: auto; background: rgba(13,15,16,0.74); position: sticky; top: 0; backdrop-filter: blur(12px); z-index: 5; }
+  nav .container { display: flex; padding: 0 32px; }
+  nav a {
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3);
+    text-decoration: none; padding: 14px 18px; border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border2); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .section { display: none; padding: 52px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.22s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  h2 { font-family: 'Instrument Serif', serif; font-size: 28px; font-weight: 400; margin-bottom: 24px; }
+  h3 {
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3); margin: 32px 0 12px;
+  }
+  p { color: var(--text2); margin-bottom: 14px; font-size: 15px; }
+  strong { color: var(--text); font-weight: 500; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { opacity: 0.85; }
+  code {
+    font-family: 'DM Mono', monospace; font-size: 12px; color: #d7fff1;
+    background: rgba(93,202,165,0.09); border: 1px solid rgba(93,202,165,0.16);
+    border-radius: 4px; padding: 1px 5px;
+  }
+  .info-box, .thought, .metric, .step {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .info-box { border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; margin: 20px 0; padding: 18px 20px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 24px 0; }
+  .metric { padding: 18px 20px; }
+  .metric-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 6px;
+  }
+  .metric-value { font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.1; color: var(--text); }
+  .metric-note { color: var(--text2); font-size: 13px; margin-top: 8px; }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 26px 0; }
+  .step { min-height: 130px; padding: 16px; }
+  .step-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 10px; }
+  .step-title { color: var(--text); font-weight: 500; margin-bottom: 8px; }
+  .step-desc { color: var(--text2); font-size: 13px; line-height: 1.65; }
+  .diagram-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 26px 22px; margin: 28px 0; overflow-x: auto; }
+  .diagram-card svg { display: block; width: 100%; min-width: 620px; }
+  table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+  th {
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text3); text-align: left;
+    padding: 10px 12px; border-bottom: 1px solid var(--border2);
+  }
+  td { padding: 12px; color: var(--text2); border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:first-child { color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  .hi td { background: rgba(93,202,165,0.06); color: var(--text); }
+  .thought { margin: 16px 0; padding: 18px 20px; }
+  .thought-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
+  }
+  .sample {
+    font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.7; color: #d7fff1;
+    background: #101516; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; margin: 16px 0 22px;
+  }
+  footer { padding: 32px 0; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); text-align: center; }
+  @media (max-width: 760px) {
+    .container { padding: 0 20px; }
+    nav .container { padding: 0 20px; }
+    .grid, .flow { grid-template-columns: 1fr; }
+    table { font-size: 13px; }
+    th, td { padding: 10px 8px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="meta-row">
+      <span>2026-06-05</span>
+      <span class="dot"></span>
+      <span>DeepSeek-AI · PKU · Tsinghua</span>
+      <span class="dot"></span>
+      <span>Local PDF</span>
+      <span class="dot"></span>
+      <span>VLM · Grounded Reasoning</span>
+    </div>
+    <h1>Thinking with Visual Primitives</h1>
+    <p class="tagline">把点和框放进多模态模型的思考过程，让模型不只是“看见”，还要在推理中明确“我指的是哪里”。</p>
+  </div>
+</header>
+
+<nav>
+  <div class="container">
+    <a href="#" class="active" onclick="show('idea',this)">核心问题</a>
+    <a href="#" onclick="show('method',this)">怎么实现</a>
+    <a href="#" onclick="show('training',this)">训练流程</a>
+    <a href="#" onclick="show('experiments',this)">实验与边界</a>
+    <a href="#" onclick="show('thoughts',this)">个人思考</a>
+  </div>
+</nav>
+
+<div id="idea" class="section active">
+<div class="container">
+  <h2>从 Perception Gap 到 Reference Gap</h2>
+  <p>一般 VLM 会把图像切成 patch，经过 ViT 得到视觉 token，再压缩或投影后和文本 token 一起送进 LLM。这篇论文没有推翻这个流程，底层仍然是类似 LLaVA 的 <strong>ViT + LLM</strong> 架构。</p>
+  <p>它真正想解决的是另一个问题：即使模型已经“看清楚”图像，纯语言 CoT 仍然很容易在复杂空间推理中指代漂移。模型说“左边那个物体”“上面的钥匙”“这条线”，但这些词没有稳定绑定到图像中的具体区域。作者把这称为 <strong>Reference Gap</strong>。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e7e4dc" x="380" y="26" text-anchor="middle">普通 VLM 流程仍然保留，变化主要发生在推理输出侧</text>
+
+      <rect x="28" y="68" width="120" height="64" rx="8" fill="rgba(126,184,247,0.10)" stroke="rgba(126,184,247,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#7eb8f7" x="88" y="96" text-anchor="middle">Image</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="88" y="116" text-anchor="middle">patch tokens</text>
+
+      <line x1="150" y1="100" x2="188" y2="100" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+      <rect x="190" y="68" width="120" height="64" rx="8" fill="rgba(93,202,165,0.10)" stroke="rgba(93,202,165,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#5dcaa5" x="250" y="96" text-anchor="middle">ViT</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="250" y="116" text-anchor="middle">global context</text>
+
+      <line x1="312" y1="100" x2="350" y2="100" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+      <rect x="352" y="68" width="142" height="64" rx="8" fill="rgba(239,184,74,0.10)" stroke="rgba(239,184,74,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#efb84a" x="423" y="96" text-anchor="middle">Token Compression</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="423" y="116" text-anchor="middle">3x3 + CSA</text>
+
+      <line x1="496" y1="100" x2="534" y2="100" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+      <rect x="536" y="68" width="130" height="64" rx="8" fill="rgba(184,175,240,0.10)" stroke="rgba(184,175,240,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#b8aff0" x="601" y="96" text-anchor="middle">LLM</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="601" y="116" text-anchor="middle">autoregressive</text>
+
+      <line x1="601" y1="134" x2="601" y2="166" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+      <rect x="430" y="170" width="342" height="64" rx="8" fill="rgba(93,202,165,0.08)" stroke="rgba(93,202,165,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#e7e4dc" x="601" y="196" text-anchor="middle">Text + box / point in reasoning</text>
+      <text font-family="DM Mono" font-size="11" fill="#5dcaa5" x="601" y="218" text-anchor="middle">visual primitives as thought units</text>
+    </svg>
+  </div>
+
+  <h3>目标场景</h3>
+  <table>
+    <thead><tr><th>场景</th><th>为什么纯语言 CoT 容易漂移</th><th>Visual primitives 的作用</th></tr></thead>
+    <tbody>
+      <tr><td>密集计数</td><td>对象多，容易漏数、重复数，后续“刚才那个”不稳定</td><td>先用 box 锚定候选，再根据框集合计数</td></tr>
+      <tr><td>细粒度 VQA</td><td>需要比较颜色、大小、材质、空间关系，多跳指代容易换目标</td><td>每一步把被比较对象显式框出来</td></tr>
+      <tr><td>迷宫导航</td><td>需要持续跟踪当前位置和分叉，语言很难表达连续路径</td><td>用 point sequence 表达探索轨迹</td></tr>
+      <tr><td>路径追踪</td><td>交叉线很多，必须沿同一条曲线持续追踪</td><td>用一串 points 记录路径走向和终点</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <strong>一句话：</strong>这篇论文不是提出一个全新的 VLM backbone，而是在标准 VLM 上提出一种 grounded multimodal reasoning framework，让隐式视觉注意力变成显式、可监督、可检查的中间状态。
+  </div>
+</div>
+</div>
+
+<div id="method" class="section">
+<div class="container">
+  <h2>把点和框变成“思考单位”</h2>
+  <p>论文定义了两类 visual primitives：<strong>bounding box</strong> 和 <strong>point</strong>。前者适合对象定位和计数，后者适合轨迹、路径、拓扑推理等更抽象的空间引用。</p>
+
+  <h3>输出格式</h3>
+  <div class="sample">&lt;ref&gt;gold key&lt;/ref&gt;&lt;box&gt;[[566,110,649,165]]&lt;/box&gt;
+
+&lt;point&gt;[[555,499],[597,472],[600,594],[544,682]]&lt;/point&gt;</div>
+
+  <p>坐标被统一映射到 <code>0-999</code> 的归一化坐标系中，所以它不直接依赖原始图片分辨率。模型学习的是“图像区域”和“坐标表达”之间的对齐关系，而不是某个固定像素尺寸。</p>
+
+  <div class="flow">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">先拆任务</div>
+      <div class="step-desc">把问题拆成找目标、找候选、比较属性、排除干扰、得到答案。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">再锚定对象</div>
+      <div class="step-desc">在关键步骤输出 box 或 point，明确当前推理引用的是哪个区域。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">继续推理</div>
+      <div class="step-desc">后续步骤围绕已经显式化的目标、候选或路径状态展开。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">最终回答</div>
+      <div class="step-desc">答案要和前面的视觉原语保持一致，例如框数量对应计数结果。</div>
+    </div>
+  </div>
+
+  <h3>它和“步骤拆分”的关系</h3>
+  <p>它确实是一种对思考过程的约束，但不是普通的“请一步步思考”。普通 CoT 只约束语言结构，这篇论文进一步约束中间视觉引用：模型必须把“我现在说的对象”落到图像坐标上。</p>
+
+  <table>
+    <thead><tr><th>方式</th><th>中间状态</th><th>能不能检查</th><th>主要问题</th></tr></thead>
+    <tbody>
+      <tr><td>纯语言 CoT</td><td>“左边的物体”“上方的钥匙”</td><td>很难自动检查</td><td>指代模糊，容易漂移</td></tr>
+      <tr class="hi"><td>Visual primitives CoT</td><td>对象描述 + box / point</td><td>可以用格式、坐标、答案一致性检查</td><td>坐标可能标错，仍然需要监督和验证</td></tr>
+      <tr><td>工具化 crop / detector</td><td>外部工具返回区域或候选 ID</td><td>更可执行</td><td>系统复杂度更高，依赖外部模块</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div id="training" class="section">
+<div class="container">
+  <h2>训练：先学会指，再学会边指边想</h2>
+  <p>这篇论文大量工作都在数据和训练流程上。核心目标是让模型不是偶尔输出坐标，而是在需要 grounding 的任务中稳定地把坐标放进推理链。</p>
+
+  <h3>数据构造</h3>
+  <table>
+    <thead><tr><th>阶段</th><th>数据来源 / 任务</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td>Pretraining</td><td>大规模 box grounding 数据，COCO、OpenImages、Objects365、Pixmo-Points 等</td><td>让模型具备基础框/点生成能力</td></tr>
+      <tr><td>Counting</td><td>密集检测数据 + GQA 细粒度问题</td><td>训练“框出候选，再计数”的流程</td></tr>
+      <tr><td>Spatial Reasoning</td><td>GQA 自然场景 + CLEVR 合成多跳推理</td><td>训练对象定位、属性比较、关系推断</td></tr>
+      <tr><td>Maze Navigation</td><td>程序生成迷宫</td><td>训练点序列探索、回溯和可达性判断</td></tr>
+      <tr><td>Path Tracing</td><td>程序生成贝塞尔曲线交叉图</td><td>训练沿线追踪、交叉处连续性判断</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Post-training pipeline</h3>
+  <div class="flow">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Specialized SFT</div>
+      <div class="step-desc">分别训练 box 专家和 point 专家，避免两种输出模式在小数据阶段互相干扰。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Specialized RL</div>
+      <div class="step-desc">用 GRPO 和 reward models 强化格式、质量、答案正确性。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Unified RFT</div>
+      <div class="step-desc">用专家模型生成更大规模数据，把 grounding 和 pointing 合成一个模型。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">On-Policy Distillation</div>
+      <div class="step-desc">用两个专家教师模型蒸馏统一模型，缩小统一模型和专家之间的能力差距。</div>
+    </div>
+  </div>
+
+  <h3>中间坐标怎么保证正确</h3>
+  <p>论文并没有给出数学保证，而是用可验证数据和 reward 降低错误率。计数任务会检查 box 是否符合元数据、box 数量是否和答案一致；迷宫会检查路径是否穿墙；路径追踪会检查点序列是否贴合真实曲线、是否覆盖完整轨迹、终点是否正确。</p>
+  <div class="info-box">
+    <strong>关键判断：</strong>bbox / point 不是天然正确的真值锚点，而是一种可监督、可过滤、可惩罚的中间表示。它能降低漂移概率，但不能机制性消灭漂移。
+  </div>
+</div>
+</div>
+
+<div id="experiments" class="section">
+<div class="container">
+  <h2>结果：强在需要精确指代的任务</h2>
+  <p>论文把模型和 Gemini-3-Flash、GPT-5.4、Claude-Sonnet-4.6、Gemma4-31B、Qwen3-VL-235B-A22B-Thinking 比较。注意作者也说明，图 1 的平均分只覆盖和论文主题相关的 7 个 benchmark，不代表模型整体能力。</p>
+
+  <div class="grid">
+    <div class="metric">
+      <div class="metric-label">Pixmo-Count EM</div>
+      <div class="metric-value">89.2</div>
+      <div class="metric-note">高于 Gemini-3-Flash 的 88.2 和 GPT-5.4 的 76.6。</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">DS Maze Navigation</div>
+      <div class="metric-value">66.9</div>
+      <div class="metric-note">其他前沿模型大多约 49-51，拓扑推理差距明显。</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">DS Path Tracing</div>
+      <div class="metric-value">56.7</div>
+      <div class="metric-note">明显高于 GPT-5.4 的 46.5 和 Gemini-3-Flash 的 41.4。</div>
+    </div>
+  </div>
+
+  <h3>Token efficiency</h3>
+  <p>架构上，模型用 DeepSeek-ViT 和 DeepSeek-V4-Flash。论文举例，一个 <code>756x756</code> 图像先产生 <code>2916</code> 个 ViT patch tokens，经过 <code>3x3</code> spatial token compression 后，进入 LLM 的视觉 token 约为 <code>324</code>，再通过 Compressed Sparse Attention 压到约 <code>81</code> 个视觉 KV entries。</p>
+
+  <table>
+    <thead><tr><th>贡献层级</th><th>这篇论文做了什么</th><th>怎么理解</th></tr></thead>
+    <tbody>
+      <tr><td>VLM 架构</td><td>仍是 ViT + LLM 的标准范式</td><td>不是全新的 VLM backbone</td></tr>
+      <tr><td>视觉 token 效率</td><td>3x3 压缩 + CSA KV cache 压缩</td><td>工程和架构侧优化很强</td></tr>
+      <tr class="hi"><td>推理范式</td><td>把 box / point 插入思考过程</td><td>核心创新：visual primitives as reasoning units</td></tr>
+      <tr><td>训练范式</td><td>SFT、RL、RFT、蒸馏围绕坐标推理链设计</td><td>把中间视觉引用变成可学习目标</td></tr>
+    </tbody>
+  </table>
+
+  <h3>论文承认的局限</h3>
+  <p>第一，受输入分辨率限制，细粒度场景中 visual primitives 仍可能不准。第二，目前需要显式 trigger 才会启用这种能力，未来希望模型自主决定何时使用。第三，point-based 拓扑推理仍然跨场景泛化有限。</p>
+</div>
+</div>
+
+<div id="thoughts" class="section">
+<div class="container">
+  <h2>个人判断：不是坐标万能，而是中间状态显式化</h2>
+
+  <div class="thought">
+    <div class="thought-label">Takeaway 1</div>
+    <p>这篇论文最有价值的点不是“输出 bbox 就不会错”，而是把多模态推理中的视觉指代从隐式注意力变成显式中间状态。显式化以后，训练数据可以对齐，RL 可以惩罚，评测也可以检查。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Takeaway 2</div>
+    <p>bbox / point 更像一种约束化 CoT。它帮助模型把目标、证据和后续推理绑在一起，减少“我刚才说的那个对象到底是谁”的漂移。但如果坐标本身错了，后面的推理仍然可能建立在错误证据上。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Takeaway 3</div>
+    <p>这篇工作没有真正做到“输出坐标后再自动 crop 回图像局部重新看”。它主要还是在同一个自回归生成过程中学习坐标 token 和视觉 token 的对应关系。因此坐标是强上下文锚点，不是可执行视觉索引。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Caveat</div>
+    <p>如果把它扩展成系统，我会考虑加外部 verifier 或 crop 工具：模型先输出候选区域，系统裁剪放大并重新验证。那样 visual primitives 才从“文本里的坐标约束”进一步变成“可执行的视觉操作”。</p>
+  </div>
+
+  <h3>可替代或互补的约束手段</h3>
+  <table>
+    <thead><tr><th>手段</th><th>作用</th><th>和本文关系</th></tr></thead>
+    <tbody>
+      <tr><td>候选对象 ID</td><td>检测器先给 object list，模型只能引用 ID</td><td>比自生成 bbox 更可控，但依赖检测器</td></tr>
+      <tr><td>Segmentation mask</td><td>比 bbox 更精确，适合重叠和细长物体</td><td>可以作为更细的 visual primitive</td></tr>
+      <tr><td>Crop / zoom-in 工具</td><td>坐标区域被真正重新输入模型</td><td>弥补本文“坐标不可执行”的弱点</td></tr>
+      <tr><td>程序化推理</td><td>用 detect、filter、count、trace 等可执行步骤</td><td>把中间过程从可检查推进到可执行</td></tr>
+      <tr><td>状态表</td><td>维护已确认、已排除、当前位置、候选分支</td><td>适合迷宫、UI 操作、长视频等多步任务</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <strong>我的总结：</strong>这篇论文可以记成“给多模态 CoT 加视觉锚点”。它不是新的 VLM 架构，而是一个 grounded reasoning framework。真正的启发是：复杂 VLM 任务里，中间状态越显式、越可验证，模型越不容易在目标和证据之间漂移。
+  </div>
+</div>
+</div>
+
+<footer>
+  <a href="index.html">Back to reading log</a>
+</footer>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  return false;
+}
+</script>
+</body>
+</html>
