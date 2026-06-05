@@ -324,11 +324,39 @@
   <h3>Token efficiency</h3>
   <p>架构上，模型用 DeepSeek-ViT 和 DeepSeek-V4-Flash。论文举例，一个 <code>756x756</code> 图像先产生 <code>2916</code> 个 ViT patch tokens，经过 <code>3x3</code> spatial token compression 后，进入 LLM 的视觉 token 约为 <code>324</code>，再通过 Compressed Sparse Attention 压到约 <code>81</code> 个视觉 KV entries。</p>
 
+  <h3>CSA 到底是什么</h3>
+  <p><strong>CSA（Compressed Sparse Attention）不是本文提出的新 VLM 架构</strong>，而是 DeepSeek-V4-Flash 底座里的注意力 / KV cache 效率机制。它解决的是“视觉 token 和长上下文怎么算得省”，不是直接解决“推理怎么不漂移”。</p>
+
+  <table>
+    <thead><tr><th>步骤</th><th>直觉理解</th><th>关键点</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Compress</td>
+        <td>把一小段 token 的 K/V 聚合成一个 compressed KV entry</td>
+        <td>不是简单平均，而是可学习的加权池化；默认压缩率可理解为每约 4 个 token 压成 1 个</td>
+      </tr>
+      <tr>
+        <td>Sparse</td>
+        <td>当前 query 先通过轻量 indexer 选择最相关的 compressed KV blocks</td>
+        <td>主注意力仍然存在，只是在筛选后的候选集合上做完整 attention</td>
+      </tr>
+      <tr class="hi">
+        <td>Trade-off</td>
+        <td>用近似 full attention 换显存和计算效率</td>
+        <td>可能漏掉重要信息，所以依赖低压缩率、overlap window、learned indexer 和训练适配降低风险</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <strong>和标准注意力的关系：</strong>full attention 是“每次都看全部历史 K/V”；CSA 是“先用便宜的索引器找相关压缩块，再在这些块上做注意力”。所以它不是没有注意力，而是把注意力的候选集合缩小了。
+  </div>
+
   <table>
     <thead><tr><th>贡献层级</th><th>这篇论文做了什么</th><th>怎么理解</th></tr></thead>
     <tbody>
       <tr><td>VLM 架构</td><td>仍是 ViT + LLM 的标准范式</td><td>不是全新的 VLM backbone</td></tr>
-      <tr><td>视觉 token 效率</td><td>3x3 压缩 + CSA KV cache 压缩</td><td>工程和架构侧优化很强</td></tr>
+      <tr><td>视觉 token 效率</td><td>3x3 压缩 + CSA KV cache 压缩</td><td>主要继承 DeepSeek-V4-Flash 底座能力，用来支撑低视觉 token 成本</td></tr>
       <tr class="hi"><td>推理范式</td><td>把 box / point 插入思考过程</td><td>核心创新：visual primitives as reasoning units</td></tr>
       <tr><td>训练范式</td><td>SFT、RL、RFT、蒸馏围绕坐标推理链设计</td><td>把中间视觉引用变成可学习目标</td></tr>
     </tbody>
@@ -356,6 +384,11 @@
   <div class="thought">
     <div class="thought-label">Takeaway 3</div>
     <p>这篇工作没有真正做到“输出坐标后再自动 crop 回图像局部重新看”。它主要还是在同一个自回归生成过程中学习坐标 token 和视觉 token 的对应关系。因此坐标是强上下文锚点，不是可执行视觉索引。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Takeaway 4</div>
+    <p>CSA 也不应被记成本文的新 VLM 架构。它是 DeepSeek-V4-Flash 底座里的 KV cache / sparse attention 机制：先压缩历史 K/V，再用 indexer 为当前 query 选相关压缩块。本文借它证明低视觉 token 成本下也能做强 grounded reasoning，但核心贡献仍然是 visual primitives 这个推理范式。</p>
   </div>
 
   <div class="thought">
