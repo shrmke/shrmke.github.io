@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MinerU-Popo — 论文笔记</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f10; --bg2: #15191b; --bg3: #1d2224;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+    --text: #e7e4dc; --text2: #aaa69c; --text3: #68635d;
+    --accent: #7eb8f7; --green: #5dcaa5; --amber: #efb84a; --red: #e8795c; --purple: #b8aff0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(circle at 50% -8%, rgba(126,184,247,0.10), transparent 36%),
+      linear-gradient(180deg, #101315 0%, #0d0f10 48%, #111516 100%);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    line-height: 1.78;
+  }
+  header { border-bottom: 1px solid var(--border); padding: 48px 0 36px; }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 32px; }
+  .meta-row {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3); margin-bottom: 18px;
+  }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text3); }
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 400;
+    line-height: 1.22;
+    margin-bottom: 16px;
+  }
+  .tagline {
+    font-size: 16px; color: var(--text2); max-width: 760px;
+    border-left: 2px solid var(--accent); padding-left: 14px; font-style: italic;
+  }
+  nav { border-bottom: 1px solid var(--border); overflow-x: auto; background: rgba(13,15,16,0.74); position: sticky; top: 0; backdrop-filter: blur(12px); z-index: 5; }
+  nav .container { display: flex; padding: 0 32px; }
+  nav a {
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3);
+    text-decoration: none; padding: 14px 18px; border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border2); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .section { display: none; padding: 52px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.22s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  h2 { font-family: 'Instrument Serif', serif; font-size: 28px; font-weight: 400; margin-bottom: 24px; }
+  h3 {
+    font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3); margin: 32px 0 12px;
+  }
+  p { color: var(--text2); margin-bottom: 14px; font-size: 15px; }
+  strong { color: var(--text); font-weight: 500; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { opacity: 0.85; }
+  code {
+    font-family: 'DM Mono', monospace; font-size: 12px; color: #dbefff;
+    background: rgba(126,184,247,0.09); border: 1px solid rgba(126,184,247,0.16);
+    border-radius: 4px; padding: 1px 5px;
+  }
+  .info-box, .thought, .metric, .step {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .info-box { border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; margin: 20px 0; padding: 18px 20px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 24px 0; }
+  .metric { padding: 18px 20px; }
+  .metric-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 6px;
+  }
+  .metric-value { font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.1; color: var(--text); }
+  .metric-note { color: var(--text2); font-size: 13px; margin-top: 8px; }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 26px 0; }
+  .step { min-height: 138px; padding: 16px; }
+  .step-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 10px; }
+  .step-title { color: var(--text); font-weight: 500; margin-bottom: 8px; }
+  .step-desc { color: var(--text2); font-size: 13px; line-height: 1.65; }
+  .diagram-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 26px 22px; margin: 28px 0; overflow-x: auto; }
+  .diagram-card svg { display: block; width: 100%; min-width: 640px; }
+  table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+  th {
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text3); text-align: left;
+    padding: 10px 12px; border-bottom: 1px solid var(--border2);
+  }
+  td { padding: 12px; color: var(--text2); border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:first-child { color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  .hi td { background: rgba(126,184,247,0.06); color: var(--text); }
+  .thought { margin: 16px 0; padding: 18px 20px; }
+  .thought-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
+  }
+  .sample {
+    font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.7; color: #dbefff;
+    background: #101516; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; margin: 16px 0 22px;
+  }
+  footer { padding: 32px 0; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); text-align: center; }
+  @media (max-width: 760px) {
+    .container { padding: 0 20px; }
+    nav .container { padding: 0 20px; }
+    .grid, .flow { grid-template-columns: 1fr; }
+    table { font-size: 13px; }
+    th, td { padding: 10px 8px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="meta-row">
+      <span>2026-07-02</span>
+      <span class="dot"></span>
+      <span>OpenDataLab · Shanghai AI Lab · SJTU</span>
+      <span class="dot"></span>
+      <span><a href="https://arxiv.org/abs/2605.24973">arXiv:2605.24973</a></span>
+      <span class="dot"></span>
+      <span><a href="https://github.com/opendatalab/MinerU-Popo">GitHub</a></span>
+    </div>
+    <h1>MinerU-Popo: Universal Post-Processing Model for Structured Document Parsing</h1>
+    <p class="tagline">不是再做一个 OCR，而是在 OCR 之后恢复文档级逻辑结构：跨页文本、跨页表格、标题层级、图表归属。</p>
+  </div>
+</header>
+
+<nav>
+  <div class="container">
+    <a href="#" class="active" onclick="show('idea',this)">问题定位</a>
+    <a href="#" onclick="show('tasks',this)">四个任务</a>
+    <a href="#" onclick="show('pipeline',this)">工程流程</a>
+    <a href="#" onclick="show('eval',this)">实验与指标</a>
+    <a href="#" onclick="show('thoughts',this)">个人思考</a>
+  </div>
+</nav>
+
+<div id="idea" class="section active">
+<div class="container">
+  <h2>页级 OCR 和文档级结构之间还隔着一步</h2>
+  <p>MinerU、PaddleOCR、GLM-OCR、Dolphin、MonkeyOCR 这类 VLM-based OCR 已经能把单页 PDF 解析成 typed blocks：标题、正文、表格、图片、caption、bbox、阅读顺序等。但下游 RAG/QA 需要的不是孤立页面，而是一个连贯的文档结构。</p>
+  <p>这篇论文的核心判断是：很多错误不是单页 OCR 识别不出来，而是 <strong>分页和复杂布局打断了文档级关系</strong>。例如上一页末尾和下一页开头其实是一段话，两个页面上的表格其实是一张跨页表，标题已经识别出来但层级不对，图片和 caption 没有关联到正确章节。</p>
+
+  <div class="diagram-card">
+    <svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <text font-family="Noto Sans SC" font-weight="500" font-size="13" fill="#e7e4dc" x="380" y="26" text-anchor="middle">MinerU-Popo 的位置：OCR 之后，RAG/QA 之前</text>
+
+      <rect x="28" y="72" width="118" height="72" rx="8" fill="rgba(126,184,247,0.10)" stroke="rgba(126,184,247,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#7eb8f7" x="87" y="102" text-anchor="middle">PDF</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="87" y="122" text-anchor="middle">pages</text>
+      <line x1="148" y1="108" x2="186" y2="108" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+
+      <rect x="188" y="72" width="134" height="72" rx="8" fill="rgba(93,202,165,0.10)" stroke="rgba(93,202,165,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#5dcaa5" x="255" y="102" text-anchor="middle">OCR Parser</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="255" y="122" text-anchor="middle">page-level blocks</text>
+      <line x1="324" y1="108" x2="362" y2="108" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+
+      <rect x="364" y="56" width="170" height="104" rx="8" fill="rgba(239,184,74,0.10)" stroke="rgba(239,184,74,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#efb84a" x="449" y="88" text-anchor="middle">MinerU-Popo</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="449" y="112" text-anchor="middle">post-processing</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="449" y="132" text-anchor="middle">relations + tree</text>
+      <line x1="536" y1="108" x2="574" y2="108" stroke="rgba(255,255,255,0.23)" marker-end="url(#arr)"/>
+
+      <rect x="576" y="72" width="148" height="72" rx="8" fill="rgba(184,175,240,0.10)" stroke="rgba(184,175,240,0.24)"/>
+      <text font-family="Noto Sans SC" font-size="13" fill="#b8aff0" x="650" y="102" text-anchor="middle">Document Tree</text>
+      <text font-family="DM Mono" font-size="11" fill="#aaa69c" x="650" y="122" text-anchor="middle">RAG / QA</text>
+
+      <text font-family="Noto Sans SC" font-size="12" fill="#aaa69c" x="380" y="205" text-anchor="middle">前提：上游 OCR 已经给出可用的 block、bbox、类型、阅读顺序和表格 HTML。</text>
+    </svg>
+  </div>
+
+  <div class="info-box">
+    <strong>关键边界：</strong>MinerU-Popo 不是 OCR 纠错模型。它默认前序解析质量较高，不负责修复字识别错误、漏检标题、严重错列的表格 HTML 或整体阅读顺序混乱。它修的是 page-level blocks 到 document-level structure 的那一层。
+  </div>
+</div>
+</div>
+
+<div id="tasks" class="section">
+<div class="container">
+  <h2>一个模型，四条 task-specific pipeline</h2>
+  <p>论文把后处理拆成四个子任务。模型参数可以共享，论文里是 fine-tuned Qwen3-VL-4B，但每个任务的输入过滤、prompt 和输出 schema 都不同。完整跑一次后处理不是一次 forward 同时输出所有结构，而是执行四类推理，再用代码整合。</p>
+
+  <table>
+    <thead><tr><th>任务</th><th>模型输入</th><th>模型输出</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>标题层级重识别</td>
+        <td>只保留 <code>title</code> / <code>TOC-title</code> / <code>section-title</code>，附带 page、bbox、content 和页面图像。</td>
+        <td><code>&lt;|id|&gt;...&lt;|level|&gt;...</code>，非标题可标为 <code>-1</code>。</td>
+        <td>构建文档树骨架。</td>
+      </tr>
+      <tr>
+        <td>文本截断合并</td>
+        <td>从 <code>text</code> / <code>list_item</code> 中筛候选相邻块；内容只保留首句和尾句。</td>
+        <td><code>src_id -> tgt_id</code> 的连续关系。</td>
+        <td>合并被分页、分栏、图表插入打断的段落。</td>
+      </tr>
+      <tr>
+        <td>跨页表格合并</td>
+        <td>相邻页边界附近的 table pair，输入表格 HTML 中的边界行和 caption 信息。</td>
+        <td>是否合并，以及 <code>cell_list</code>：哪些列的边界 cell 需要语义合并。</td>
+        <td>把跨页表格 HTML 拼成一个逻辑表。</td>
+      </tr>
+      <tr>
+        <td>图表与文本结构关联</td>
+        <td>只保留 title、image/table/chart、caption、footnote 等视觉相关块。</td>
+        <td><code>src_id -> tgt_id</code> 关联边。</td>
+        <td>把 caption 挂到图表，把图表挂到所属章节。</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Caption 不是图片描述</h3>
+  <p>这里的 caption 指文档原文中已经存在的图注/表注，例如 <code>Figure 2: Overview of MinerU-Popo</code> 或 <code>Table 3: RAG Performance</code>。它不是模型看图后生成的图片文本化描述。代码会把 <code>fig-caption</code>、<code>fig-title</code> 归一成 <code>image_caption</code>，把 <code>tab-caption</code>、<code>tab-title</code> 归一成 <code>table_caption</code>。</p>
+</div>
+</div>
+
+<div id="pipeline" class="section">
+<div class="container">
+  <h2>过滤、分块、同步、组树</h2>
+
+  <div class="flow">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Task Filtering</div>
+      <div class="step-desc">用代码规则把 OCR blocks 筛成每个任务的候选输入，减少噪声和视觉/文本上下文长度。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Dynamic Chunking</div>
+      <div class="step-desc">长文档按页切 chunk，在边界附近选择目标元素密集的页，避免一次塞完整 PDF。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Synchronization</div>
+      <div class="step-desc">标题层级用重叠区域计算偏移，校准后续 chunk 的 level；其他任务主要取并集。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-title">Assembly</div>
+      <div class="step-desc">代码把四类关系写回 blocks，再组装成树，并进一步做 subnode 和摘要。</div>
+    </div>
+  </div>
+
+  <h3>文本合并规则</h3>
+  <p>源码里的文本候选不是只限跨页，同页中被图片、表格、分栏隔开的两段也可能被筛到。它会拒绝一些明显或疑似不该合并的情况：前段以句号/问号/冒号/分号等终止，前段太短，后段像列表项，任一段包含 tab，或两段都以数字开头。这里的 tab 是 <code>\t</code> 制表符，不是普通空格。</p>
+
+  <h3>表格合并规则</h3>
+  <p>表格候选更依赖上游 HTML。代码只看相邻页的“上一页最后一个 table”和“下一页第一个 table”，再检查中间是否夹正文、caption 是否一致、下表 caption 是否有 continued/续表 标记、footnote 数量、bbox 宽度差是否小于 10%、列结构是否兼容。列结构来自 table HTML，使用 BeautifulSoup 解析 <code>tr</code>、<code>td</code>、<code>th</code>、<code>rowspan</code>、<code>colspan</code>。</p>
+
+  <div class="info-box">
+    <strong>代码和论文的小差异：</strong>论文写的是 three-page overlap；开源 <code>adaptive_chunk</code> 默认是 <code>chunk_size=50</code>、<code>overlap=1</code>，并在目标页前后 5 页内选择任务元素最多的页作为边界。
+  </div>
+
+  <h3>最终组树是代码逻辑</h3>
+  <p>模型输出的是局部关系：<code>level</code>、<code>contd</code>、<code>image</code>、<code>table_merge</code>、<code>cell_list</code>。最终 <code>get_json_tree.py</code> 通过确定性逻辑合并跨页表、聚合文本块、用标题 level 栈建树、把图表和 caption/footnote 加回正确章节。语义增强中，长文本节点超过约 500 字符会被切成 <code>subnode</code>；摘要生成则由 LLM 另一步完成。</p>
+</div>
+</div>
+
+<div id="eval" class="section">
+<div class="container">
+  <h2>实验结果和 TEDS</h2>
+  <div class="grid">
+    <div class="metric">
+      <div class="metric-label">Title TEDS</div>
+      <div class="metric-value">90.6</div>
+      <div class="metric-note">MinerU-Popo 在 PostDocBench 标题层级任务上优于更大通用模型。</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Text Recall</div>
+      <div class="metric-value">93.8%</div>
+      <div class="metric-note">文本截断恢复在完整训练集上达到较高召回。</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">RAG Latency</div>
+      <div class="metric-value">-70%</div>
+      <div class="metric-note">在部分子集上，用树节点摘要检索显著降低每问延迟。</div>
+    </div>
+  </div>
+
+  <h3>TEDS 是什么</h3>
+  <p>TEDS 是 Tree Edit Distance Similarity，用树编辑距离衡量两棵结构树有多像。标题层级天然可以表示成树；表格也可以通过 HTML/DOM 表示成树，例如 <code>table -> tr -> td</code>，并把 <code>rowspan</code>、<code>colspan</code> 和单元格文本作为结构/内容的一部分比较。</p>
+  <p>开源 <code>eval/evaluate.py</code> 主要评标题层级 TEDS：先把预测标题块和 GT 标题块按 page、bbox、文本相似度和类型对齐，再用 <code>zss</code> 树编辑距离库计算 content-aware TEDS。论文里的文本合并、图文关联、表格合并和 RAG/QA 评测脚本没有完整开源。</p>
+
+  <table>
+    <thead><tr><th>现象</th><th>解释</th></tr></thead>
+    <tbody>
+      <tr><td>结构树 RAG 多数子集更准且更快</td><td>用标题路径 + node summary 做检索，减少全文 embedding 和无关上下文。</td></tr>
+      <tr><td>工业/金融细节题可能不占优</td><td>summary 更适合关键观点、方法、趋势，不适合精确数字和复杂表格细节。</td></tr>
+      <tr><td>Visual RAG 召回高但答案未必好</td><td>页级图像检索命中后 bbox recall 高，但高分辨率密集页面会压迫 VLM 理解。</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<div id="thoughts" class="section">
+<div class="container">
+  <h2>个人思考：工程可控，但边界很清楚</h2>
+
+  <div class="thought">
+    <div class="thought-label">Thought 01</div>
+    <p><strong>标题漏检是硬边界。</strong>代码只把已经被上游标成 title/TOC-title/section-title 的块送进标题层级任务。如果 OCR 一开始把标题识别成正文，Popo 默认不会把它重新发现出来。它能修“层级错”，不能稳定修“标题漏”。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Thought 02</div>
+    <p><strong>规则过滤偏保守。</strong>规则可以降低成本、减少误合并，但源码里有些规则并非完全确定，例如“两个文本都以数字开头就拒绝”“下表 caption 没有 continued 就拒绝”。这些规则可能系统性降低召回，更适合作为模型输入特征，而不是 hard filter。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Thought 03</div>
+    <p><strong>表格任务高度依赖上游 HTML。</strong>列数、rowspan/colspan 和边界 cell 合并都来自表格 HTML。如果上游表格 HTML 已经严重错列、漏行或解析失败，Popo 不会重新从图像中恢复真实表格结构。</p>
+  </div>
+
+  <div class="thought">
+    <div class="thought-label">Thought 04</div>
+    <p><strong>这篇的价值在“文档级关系恢复”。</strong>它不是端到端最强文档理解，而是把 OCR 后处理拆成几个可控的结构关系预测，再由代码组树。这种设计适合生产落地，也暴露了一个改进方向：保留确定规则，放松弱规则，用模型做更高召回的二阶段判断。</p>
+  </div>
+
+  <div class="info-box">
+    <strong>一句话总结：</strong>MinerU-Popo 默认 OCR 内容已经可用，它补的是文档结构这层：把 page-level blocks 变成 document-level tree。它的亮点是工程化拆解，风险也来自工程化拆解中过早、过硬的规则筛选。
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="container">
+    论文阅读笔记 · MinerU-Popo · 2026-07-02
+  </div>
+</footer>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  return false;
+}
+</script>
+</body>
+</html>
